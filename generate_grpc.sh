@@ -1,2 +1,2 @@
 #!/bin/sh
-python -m grpc_tools.protoc -I./src/protos --python_out=./src/generated --pyi_out=./src/generated --grpc_python_out=./src/generated ./src/protos/server.proto
+python -m grpc_tools.protoc -I./src/rov26backend/protos --python_out=./src/rov26backend/generated --pyi_out=./src/rov26backend/generated --grpc_python_out=./src/rov26backend/generated ./src/rov26backend/protos/server.proto
