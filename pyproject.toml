@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rov26backend"
+version = "0.0.1"
+dependencies = [
+    "grpcio ~= 1.83",
+    "grpcio-tools ~= 1.83",
+    "inputs ~= 0.5",
+    "opencv-python ~= 5.0",
+    "pymavlink ~= 2.4",
+    "pyserial ~= 3.5",
+    "pyzbar ~= 0.1.9"
+]
+
+authors = [
+  { name="AMV UI", email="author@example.com" },
+]
+description = "Backend python program for running ROV"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.scripts]
+gawerov = "rov26backend.main:main"
+
+[project.urls]
+Homepage = "https://github.com/AMV-UI/KKI-26-ROV-Backend-Package"
+Issues = "https://github.com/AMV-UI/KKI-26-ROV-Backend-Package/issues"

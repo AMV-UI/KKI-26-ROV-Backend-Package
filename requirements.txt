@@ -1,0 +1,8 @@
+inputs
+opencv-python
+pyzbar
+pyserial
+pymavlink
+inputs
+grpcio
+grpcio-tools
