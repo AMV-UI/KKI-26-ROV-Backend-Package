@@ -1,7 +1,7 @@
-import os
-import fnmatch
 from pymavlink import mavutil
 import logging
+import serial.tools.list_ports
+import sys
 
 logger = logging.getLogger("ROV.px4")
 
@@ -19,11 +19,15 @@ class PixhawkController:
 
     def _get_serial_ports(self):
         dirs = []
-        list_of_files = os.listdir("/dev")
-        pattern = "ttyACM*"
-        for entry in list_of_files:
-            if fnmatch.fnmatch(entry, pattern):
-                dirs.append(f"/dev/{entry}")
+        ports = serial.tools.list_ports.comports()
+
+        for port in ports:
+            if sys.platform == "win32":
+                dirs.append(port.device)
+            else:
+                if "ttyACM" in port.device:
+                    dirs.append(port.device)
+
         return dirs
 
     def _init_serial(self):
