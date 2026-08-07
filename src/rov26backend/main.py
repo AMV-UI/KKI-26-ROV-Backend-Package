@@ -4,6 +4,8 @@ from rov26backend.models.telemetry_state import TelemetryState
 from rov26backend.models.vision_state import VisionState
 from rov26backend.models.control_state import ControlState
 from rov26backend.controllers.gcs_controller import RosGrpcServicer
+from rov26backend.controllers.front_camera_controller import FrontCamera
+from rov26backend.controllers.bottom_camera_controller import BottomCamera
 from rov26backend.generated.server_pb2_grpc import add_ServerServicer_to_server
 
 import time
@@ -110,16 +112,29 @@ def control_loop(
         time.sleep(max(0, period - elapsed))
 
 
+def front_cam_loop(front_cam, shutdown_event):
+    while not shutdown_event.is_set():
+        front_cam.run()
+
+
+def bottom_cam_loop(bottom_cam, shutdown_event):
+    while not shutdown_event.is_set():
+        bottom_cam.run()
+
+
 def main():
     logger, log_listener = setup_logging()
 
     shutdown_event = threading.Event()
 
-    joystick_controller = JoystickController()
-    px4_controller = PixhawkController()
-
     telemetry_state = TelemetryState()
     vision_state = VisionState()
+
+    joystick_controller = JoystickController()
+    px4_controller = PixhawkController()
+    front_cam = FrontCamera(vision_state)
+    bottom_cam = BottomCamera()
+
     control_state = ControlState()
 
     control_thread = threading.Thread(
@@ -136,8 +151,18 @@ def main():
         target=joystick_loop, args=(joystick_controller, shutdown_event)
     )
 
+    front_cam_thread = threading.Thread(
+        target=front_cam_loop, args=(front_cam, shutdown_event)
+    )
+
+    bottom_cam_thread = threading.Thread(
+        target=bottom_cam_loop, args=(bottom_cam, shutdown_event)
+    )
+
     joystick_thread.start()
     control_thread.start()
+    front_cam_thread.start()
+    bottom_cam_thread.start()
 
     server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
     add_ServerServicer_to_server(RosGrpcServicer(telemetry_state, vision_state), server)
@@ -160,6 +185,10 @@ def main():
             joystick_thread.join(timeout=2.0)
         if control_thread.is_alive():
             control_thread.join(timeout=2.0)
+        if front_cam_thread.is_alive():
+            front_cam_thread.join(timeout=2.0)
+        if bottom_cam_thread.is_alive():
+            bottom_cam_thread.join(timeout=2.0)
 
         logger.info("All threads stopped. Goodbye.")
 

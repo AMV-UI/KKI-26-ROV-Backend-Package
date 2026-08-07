@@ -1,19 +1,17 @@
 import cv2
 from pyzbar.pyzbar import decode
-from core.utils.config import Topic
-from core_perception.base_camera_controller import BaseCameraNode
-from std_msgs.msg import String
+from rov26backend.models.vision_state import VisionState
+from rov26backend.controllers.base_camera_controller import BaseCamera
 
 
-class FrontCameraNode(BaseCameraNode):
-    def __init__(self, webcam=False):
+class FrontCamera(BaseCamera):
+    def __init__(self, vision_state: VisionState):
         super().__init__(
             node_name="front_camera",
-            camera_identifier="046d_C270_HD_WEBCAM_55E22480",
+            camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD",
             stream_url="rtsp://localhost:8554/live/frontcam",
-            webcam=webcam,
         )
-        self.qr_data_pub = Topic.qr_side.createPublisher(self)
+        self.vision_state = vision_state
 
     def process_and_publish(self, frame):
         decoded_objects = decode(frame)
@@ -25,9 +23,10 @@ class FrontCameraNode(BaseCameraNode):
                 f"QR Code Detected: {data}", throttle_duration_sec=2.0
             )
 
-            qr_msg = String()
-            qr_msg.data = data
-            self.qr_data_pub.publish(qr_msg)
+            if data in ["A", "B", "C", "D"]:
+                self.vision_state.update(qr_side=data)
+            else:
+                self.vision_state.update(qr_side="NOT_FOUND")
 
             points = obj.polygon
             if len(points) == 4:

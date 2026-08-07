@@ -15,8 +15,6 @@ class PixhawkController:
 
         self.servo_pwm = 1500
 
-        self._init_serial()
-
     def _get_serial_ports(self):
         dirs = []
         ports = serial.tools.list_ports.comports()
