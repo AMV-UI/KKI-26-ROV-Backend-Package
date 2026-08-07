@@ -2,13 +2,16 @@ import cv2
 from pyzbar.pyzbar import decode
 from rov26backend.models.vision_state import VisionState
 from rov26backend.controllers.base_camera_controller import BaseCamera
+import sys
 
 
 class FrontCamera(BaseCamera):
     def __init__(self, vision_state: VisionState):
         super().__init__(
             node_name="front_camera",
-            camera_id="046d_C270_HD_WEBCAM_55E22480",
+            camera_id="046d_C270_HD_WEBCAM_55E22480"
+            if sys.platform == "linux"
+            else "7&2C094952&0&0000",
             stream_url="rtsp://localhost:8554/live/frontcam",
         )
         self.vision_state = vision_state
