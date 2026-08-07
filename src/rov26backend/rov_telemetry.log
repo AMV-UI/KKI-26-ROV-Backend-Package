@@ -1,0 +1,37 @@
+2026-08-07 10:45:42,279 - MainThread - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:45:42,280 - Control - INFO - Control loop started.
+2026-08-07 10:45:42,288 - MainThread - INFO - Server running. Press Ctrl+C to stop.
+2026-08-07 10:45:42,289 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:45:43,290 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:45:44,293 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:45:45,294 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:45:46,296 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:45:47,298 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:45:48,299 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:45:48,313 - MainThread - INFO - Ctrl+C detected! Shutting down ROV backend...
+2026-08-07 10:45:48,314 - MainThread - INFO - Waiting for threads to exit...
+2026-08-07 10:46:19,311 - MainThread - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:19,312 - Joystick - INFO - Joystick thread started.
+2026-08-07 10:46:19,312 - Control - INFO - Control loop started.
+2026-08-07 10:46:19,316 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:19,324 - MainThread - INFO - Server running. Press Ctrl+C to stop.
+2026-08-07 10:46:20,318 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:21,319 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:22,322 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:23,324 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:24,325 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:25,327 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:26,328 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:27,330 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:46:28,149 - MainThread - INFO - Ctrl+C detected! Shutting down ROV backend...
+2026-08-07 10:46:28,151 - MainThread - INFO - Waiting for threads to exit...
+2026-08-07 10:46:30,151 - MainThread - INFO - All threads stopped. Goodbye.
+2026-08-07 10:47:15,232 - MainThread - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:47:15,233 - Joystick - INFO - Joystick thread started.
+2026-08-07 10:47:15,233 - Control - INFO - Control loop started.
+2026-08-07 10:47:15,241 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:47:15,245 - MainThread - INFO - Server running. Press Ctrl+C to stop.
+2026-08-07 10:47:16,242 - Control - WARNING - No USB serial ports found (Pixhawk)
+2026-08-07 10:47:16,944 - MainThread - INFO - Ctrl+C detected! Shutting down ROV backend...
+2026-08-07 10:47:16,946 - MainThread - INFO - Waiting for threads to exit...
+2026-08-07 10:47:18,946 - MainThread - INFO - All threads stopped. Goodbye.

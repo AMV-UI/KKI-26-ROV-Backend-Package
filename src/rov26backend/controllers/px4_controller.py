@@ -1,6 +1,9 @@
 import os
 import fnmatch
 from pymavlink import mavutil
+import logging
+
+logger = logging.getLogger("ROV.px4")
 
 
 class PixhawkController:
@@ -14,12 +17,6 @@ class PixhawkController:
 
         self._init_serial()
 
-    def log(self, msg):
-        print(f"PX4: {msg}")
-
-    def log_err(self, msg):
-        print(f"[ERR] PX4: {msg}")
-
     def _get_serial_ports(self):
         dirs = []
         list_of_files = os.listdir("/dev")
@@ -32,16 +29,16 @@ class PixhawkController:
     def _init_serial(self):
         ports = self._get_serial_ports()
         if not ports:
-            self.log_err("No USB serial ports found (Pixhawk)")
+            logger.warn("No USB serial ports found (Pixhawk)")
             return
-        self.log(f"Available USB ports: {ports}")
+        logger.info(f"Available USB ports: {ports}")
         for port in ports:
             try:
                 self.master = mavutil.mavlink_connection(port, baud=57600)
                 self.master.wait_heartbeat()
-                self.log(f"Pixhawk found on {port}")
+                logger.info(f"Pixhawk found on {port}")
                 self.master.mav.heartbeat_send(0, 0, 0, 0, 0)
-                self._px_arm()
+                self.arm()
                 self.master.mav.request_data_stream_send(
                     self.master.target_system,
                     self.master.target_component,
@@ -81,12 +78,12 @@ class PixhawkController:
                 )
                 return
             except Exception as e:
-                self.log_err(f"Failed to connect to Pixhawk on {port}: {e}")
+                logger.warn(f"Failed to connect to Pixhawk on {port}: {e}")
                 self.master = None
 
-        self.log_err("Pixhawk not found on any port")
+        logger.warn("Pixhawk not found on any port")
 
-    def _px_arm(self, block=True):
+    def arm(self, block=True):
         if self.master is None:
             return
         self.master.mav.command_long_send(
@@ -102,12 +99,12 @@ class PixhawkController:
             0,
             0,
         )
-        self.log("Arming motors ...")
+        logger.info("Arming motors ...")
         if block:
             self.master.motors_armed_wait()
-            self.log("Motor Armed!")
+            logger.info("Motor Armed!")
 
-    def _px_disarm(self, block=True):
+    def disarm(self, block=True):
         if self.master is None:
             return
         self.master.mav.command_long_send(
@@ -123,10 +120,10 @@ class PixhawkController:
             0,
             0,
         )
-        self.log("Disarming motors ...")
+        logger.info("Disarming motors ...")
         if block:
             self.master.motors_disarmed_wait()
-            self.log("Motor Disarmed!")
+            logger.info("Motor Disarmed!")
 
     def request_pixhawk_to_telemetry(self, telemetry_state):
         try:
@@ -183,10 +180,10 @@ class PixhawkController:
             self.log_err(f"Error in request_pixhawk: {error}")
             return
 
-    def _px_set_mode(self, mode):
+    def set_mode(self, mode):
         self.pxmode = mode
         if self.pxmode not in self.master.mode_mapping():
-            self.log_err(f"Unknown Mode : {self.pxmode}")
+            logger.warn(f"Unknown Mode : {self.pxmode}")
             return
 
         mode_id = self.master.mode_mapping()[self.pxmode]
@@ -196,7 +193,7 @@ class PixhawkController:
             mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
             mode_id,
         )
-        self.log(f"Mode set to : {self.pxmode}")
+        logger.info(f"Mode set to : {self.pxmode}")
 
     def rc_channels_override_send(self, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8):
         self.master.mav.rc_channels_override_send(
@@ -219,7 +216,7 @@ class PixhawkController:
             if msg is None:
                 break
 
-    def _get_cur_mode(self):
+    def get_mode(self):
         if "HEARTBEAT" in self.master.messages:
             latest_heartbeat = self.master.messages["HEARTBEAT"]
             mode_id = latest_heartbeat.custom_mode
@@ -230,9 +227,3 @@ class PixhawkController:
             )
             return mode_name
         return "MANUAL"
-
-    def __str__(self):
-        if self.master is not None:
-            return "Logs appear here"
-        else:
-            return "Pixhawk hasnt started yet"
