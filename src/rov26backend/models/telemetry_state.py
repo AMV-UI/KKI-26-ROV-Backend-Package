@@ -36,7 +36,7 @@ class TelemetryState:
         self.mot6_eff = 0
 
         # Flight Controller Status
-        self.fc_cpu_load = 0.0
+        self.fc_cpu_load = False
         self.fc_gyro_health = False
         self.fc_acc_health = False
         self.fc_compass_health = False

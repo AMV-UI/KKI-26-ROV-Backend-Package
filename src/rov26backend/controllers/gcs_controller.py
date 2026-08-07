@@ -5,6 +5,9 @@ from rov26backend.generated.server_pb2 import telemetryRequest, telemetryRespons
 from rov26backend.generated.server_pb2_grpc import ServerServicer
 from rov26backend.models.telemetry_state import TelemetryState
 from rov26backend.models.vision_state import VisionState
+import logging
+
+logger = logging.getLogger("ROV.gRPC")
 
 
 class RosGrpcServicer(ServerServicer):
@@ -23,6 +26,7 @@ class RosGrpcServicer(ServerServicer):
                 #     qr = "NOT_FOUND"
                 # else:
                 #     qr = qr_side_msg.data
+                logger.debug(latest_data)
 
                 response = telemetryResponse(**latest_data)
 
@@ -30,4 +34,4 @@ class RosGrpcServicer(ServerServicer):
 
                 time.sleep(0.1)
         except Exception as e:
-            print(e)
+            logger.warn(f"Error servicing client: {e}")

@@ -13,6 +13,7 @@ import concurrent.futures
 import logging
 from logging.handlers import QueueHandler, QueueListener
 import queue
+import os
 
 logger = logging.getLogger("ROV.main")
 
@@ -21,24 +22,46 @@ def setup_logging():
     """Sets up the asynchronous logging architecture."""
     log_queue = queue.Queue()
 
+    # --- Console Handler (INFO only) ---
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_formatter = logging.Formatter("%(levelname)s - %(message)s")
     console_handler.setFormatter(console_formatter)
 
-    file_handler = logging.FileHandler("rov_telemetry.log")
-    file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter(
         "%(asctime)s - %(threadName)s - %(levelname)s - %(message)s"
     )
-    file_handler.setFormatter(file_formatter)
 
-    listener = QueueListener(log_queue, console_handler, file_handler)
+    px4_handler = logging.FileHandler(os.path.abspath("rov_pixhawk.log"))
+    px4_handler.setLevel(logging.DEBUG)
+    px4_handler.setFormatter(file_formatter)
+    px4_handler.addFilter(logging.Filter("ROV.px4"))
+
+    joy_handler = logging.FileHandler(os.path.abspath("rov_joystick.log"))
+    joy_handler.setLevel(logging.DEBUG)
+    joy_handler.setFormatter(file_formatter)
+    joy_handler.addFilter(logging.Filter("ROV.joystick"))
+
+    grpc_handler = logging.FileHandler(os.path.abspath("rov_grpc.log"))
+    grpc_handler.setLevel(logging.DEBUG)
+    grpc_handler.setFormatter(file_formatter)
+    grpc_handler.addFilter(logging.Filter("ROV.gRPC"))
+
+    listener = QueueListener(
+        log_queue,
+        console_handler,
+        px4_handler,
+        joy_handler,
+        grpc_handler,
+        respect_handler_level=True,
+    )
     listener.start()
 
     logger = logging.getLogger("ROV")
     logger.setLevel(logging.DEBUG)
     logger.addHandler(QueueHandler(log_queue))
+
+    logger.propagate = False
 
     return logger, listener
 
@@ -90,7 +113,7 @@ def control_loop(
 
         target_mode = latest_control_state["target_mode"]
         if target_mode is not None:
-            px4_controller._px_set_mode(target_mode)
+            px4_controller.set_mode(target_mode)
             control_state.update(target_mode=None)
 
         px4_controller._pump_mavlink_messages()
@@ -131,9 +154,10 @@ def main():
             telemetry_state,
             shutdown_event,
         ),
+        daemon=True,
     )
     joystick_thread = threading.Thread(
-        target=joystick_loop, args=(joystick_controller, shutdown_event)
+        target=joystick_loop, args=(joystick_controller, shutdown_event), daemon=True
     )
 
     joystick_thread.start()
@@ -147,7 +171,8 @@ def main():
     logger.info("Server running. Press Ctrl+C to stop.")
 
     try:
-        server.wait_for_termination()
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         logger.info("Ctrl+C detected! Shutting down ROV backend...")
     finally:

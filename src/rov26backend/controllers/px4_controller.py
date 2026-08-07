@@ -165,7 +165,7 @@ class PixhawkController:
                 telemetry_state.update(pitch=attitude.pitch)
 
             if sys_status is not None:
-                telemetry_state.update(fc_cpu_load=sys_status.load)
+                telemetry_state.update(fc_cpu_load=sys_status.load > 0.8)
                 health = sys_status.onboard_control_sensors_health
                 telemetry_state.update(fc_gyro_health=(health & 1) > 0)
                 telemetry_state.update(fc_acc_health=(health & 2) > 0)
