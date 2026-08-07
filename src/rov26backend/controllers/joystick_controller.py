@@ -1,6 +1,9 @@
 from inputs import get_gamepad
 from rov26backend.models.button import ModeButton
 import threading
+import logging
+
+logger = logging.getLogger("ROV.joystick")
 
 
 class JoystickController:
@@ -37,12 +40,6 @@ class JoystickController:
 
         self.lock = threading.Lock()
 
-    def log(self, msg):
-        print(f"Joystick: {msg}")
-
-    def log_err(self, msg):
-        print(f"[ERR] Joystick: {msg}")
-
     def _normalize_stick(self, val):
         """Converts 0-255 stick value to -1.0 to 1.0 (128 is center)"""
         return (val - 128) / 128.0
@@ -59,8 +56,7 @@ class JoystickController:
         try:
             events = get_gamepad()
             for event in events:
-                print(event.code)
-                print(event.state)
+                logger.debug(f"Event: {event.code}: ")
                 if event.ev_type == "Absolute":
                     if event.code in self.axes:
                         self.axes[event.code] = event.state
@@ -77,7 +73,7 @@ class JoystickController:
             self._calculate_targets()
 
         except Exception as e:
-            self.log_err(f"Error reading gamepad: {e}")
+            logger.warn(f"Error reading gamepad: {e}")
 
     def _calculate_targets(self):
         """Translates raw axis inputs to target PWM channels (1300-1700)."""

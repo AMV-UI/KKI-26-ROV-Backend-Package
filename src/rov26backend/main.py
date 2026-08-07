@@ -98,8 +98,8 @@ def control_loop(
 
         latest_telemetry_state = telemetry_state.get_latest()
 
-        toggle_arm = latest_control_state["toggle_arm"]
-        if toggle_arm:
+        arm_toggle = latest_control_state["arm_toggle"]
+        if arm_toggle:
             if latest_telemetry_state["armed"]:
                 px4_controller.disarm(block=False)
             else:
