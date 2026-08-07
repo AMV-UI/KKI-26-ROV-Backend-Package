@@ -125,8 +125,8 @@ class JoystickController:
                             self.lb_btn = event.state == 1
                         elif event.code == "BTN_TL":
                             self.rb_btn = event.state == 1
-                        elif event.code == "ABS_HAT0Y":
-                            self.servo_btn = event.state
+                if event.code == "ABS_HAT0Y":
+                    self.servo_btn = event.state
 
             self._calculate_targets()
 
@@ -173,16 +173,12 @@ class JoystickController:
 
         with self.lock:
             self.target_manual_control = [forward, lateral, vertical, yaw]
-            now = time.time()
-            dt = now - self.last_servo_time
-            self.last_servo_time = now
-            delta = self.servo_btn * self.MAX_SLEW_PER_SEC * dt
-            self.servo_pwm = max(500, min(2500, self.servo_pwm + delta))
 
     def update_smoothed_controls(self, control_state):
         with self.lock:
             target_snapshot = self.target_manual_control[:]
             btn_snapshot = self.btn.copy()
+            current_servo_btn = self.servo_btn
             lb = self.lb_btn
             rb = self.rb_btn
 
@@ -205,7 +201,14 @@ class JoystickController:
         if self.arm_btn.toggle(lb, rb):
             control_state.update(arm_toggle=True)
 
+        now = time.time()
+        dt = now - self.last_servo_time
+        self.last_servo_time = now
+
+        delta = current_servo_btn * self.MAX_SLEW_PER_SEC * dt
+        self.servo_pwm = max(500, min(2500, self.servo_pwm + delta))
+
         logger.debug(f"SERVO{self.servo_pwm}")
-        control_state.update(servo=self.servo_pwm)
+        control_state.update(servo=int(self.servo_pwm))
 
         return control_state
