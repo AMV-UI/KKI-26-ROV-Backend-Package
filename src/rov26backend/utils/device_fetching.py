@@ -1,9 +1,12 @@
 import sys
+import logging
 
 if sys.platform == "win32":
     import wmi
 else:
     import pyudev
+
+logger = logging.getLogger("ROV.devi")
 
 
 def get_webcam_device_idx(target_serial):
@@ -22,6 +25,7 @@ def _get_webcam_windows(target_serial):
     cameras = sorted(cameras, key=lambda x: x.PNPDeviceID)
 
     for index, cam in enumerate(cameras):
+        logger.info(f"{index} {cam}")
         if cam.PNPDeviceID:
             hardware_serial = cam.PNPDeviceID.split("\\")[-1]
 

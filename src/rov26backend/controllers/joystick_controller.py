@@ -47,7 +47,7 @@ class JoystickController:
 
         self.MAX_SLEW_PER_SEC = 400  # unit PWM per detik, sesuaikan
         self.last_servo_time = time.time()
-        self.servo_pwm = 1500
+        self.servo_pwm = 500
 
         self.arm1 = ModeButton("")
         self.arm2 = ModeButton("")
@@ -208,7 +208,7 @@ class JoystickController:
         delta = current_servo_btn * self.MAX_SLEW_PER_SEC * dt
         self.servo_pwm = max(500, min(2500, self.servo_pwm + delta))
 
-        logger.debug(f"SERVO{self.servo_pwm}")
+        logger.info(f"SERVO{self.servo_pwm}")
         control_state.update(servo=int(self.servo_pwm))
 
         return control_state
