@@ -8,7 +8,7 @@ class FrontCamera(BaseCamera):
     def __init__(self, vision_state: VisionState):
         super().__init__(
             node_name="front_camera",
-            camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD",
+            camera_id="046d_C270_HD_WEBCAM_55E22480",
             stream_url="rtsp://localhost:8554/live/frontcam",
         )
         self.vision_state = vision_state
@@ -18,10 +18,6 @@ class FrontCamera(BaseCamera):
 
         for obj in decoded_objects:
             data = obj.data.decode("utf-8")
-
-            self.get_logger().info(
-                f"QR Code Detected: {data}", throttle_duration_sec=2.0
-            )
 
             if data in ["A", "B", "C", "D"]:
                 self.vision_state.update(qr_side=data)

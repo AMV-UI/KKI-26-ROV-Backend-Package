@@ -1,7 +1,10 @@
 import cv2
 import subprocess
-import imageio_ffmpeg  # Added this import
+import imageio_ffmpeg
 from rov26backend.utils.device_fetching import get_webcam_device_idx
+import logging
+
+logger = logging.getLogger("ROV.vis")
 
 
 class BaseCamera:
@@ -17,7 +20,6 @@ class BaseCamera:
         fps=30,
         width=640,
         height=480,
-        webcam=False,
         camera_id="",
     ):
 
@@ -26,7 +28,8 @@ class BaseCamera:
         else:
             self.camera_idx = get_webcam_device_idx(camera_id)
 
-        self.stream_url = stream_url
+        # Force IPv4 resolution to prevent FFmpeg connection hangs
+        self.stream_url = stream_url.replace("localhost", "127.0.0.1")
 
         self.cap = cv2.VideoCapture(self.camera_idx)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
@@ -38,6 +41,11 @@ class BaseCamera:
         self.show_result = False
         self.vid_writer = None
 
+        self.ffmpeg_process = None
+
+    def _start_ffmpeg(self, frame):
+        """Dynamically starts FFmpeg right before the first frame is sent."""
+        height, width, _ = frame.shape
         ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
 
         ffmpeg_cmd = [
@@ -52,7 +60,7 @@ class BaseCamera:
             "-pix_fmt",
             "bgr24",
             "-s",
-            f"{width}x{height}",
+            f"{width}x{height}",  # Dynamically matches the real webcam output
             "-r",
             str(self.fps),
             "-i",
@@ -69,16 +77,6 @@ class BaseCamera:
             "2.5M",
             "-pix_fmt",
             "yuv420p",
-            "-r",
-            str(self.fps),
-            "-g",
-            "15",
-            "-forced-idr",
-            "1",
-            "-fflags",
-            "+genpts+igndts",
-            "-max_muxing_queue_size",
-            "1024",
             "-rtsp_transport",
             "tcp",
             "-f",
@@ -86,6 +84,7 @@ class BaseCamera:
             self.stream_url,
         ]
 
+        logger.info(f"Starting FFmpeg for {self.stream_url} at {width}x{height}")
         self.ffmpeg_process = subprocess.Popen(
             ffmpeg_cmd, stdin=subprocess.PIPE, bufsize=10**8
         )
@@ -97,20 +96,22 @@ class BaseCamera:
             if not success:
                 return
 
-            # 1. Let the child node (Front/Bottom) process the frame in-place
             self.process_and_publish(frame)
 
-            # 2. Stream the processed frame directly to FFmpeg
+            if self.ffmpeg_process is None:
+                self._start_ffmpeg(frame)
             if self.ffmpeg_process.poll() is None:
                 self.ffmpeg_process.stdin.write(frame.tobytes())
                 self.ffmpeg_process.stdin.flush()
             else:
-                pass
+                logger.error("FFmpeg crashed! Clearing process.")
+                self.ffmpeg_process = None
 
         except BrokenPipeError:
-            pass
-        except Exception:
-            pass
+            logger.error("Broken pipe: FFmpeg shut down unexpectedly.")
+            self.ffmpeg_process = None
+        except Exception as e:
+            logger.error(f"Camera Loop Error: {e}")
 
     def process_and_publish(self, frame):
         """To be overridden by child classes"""

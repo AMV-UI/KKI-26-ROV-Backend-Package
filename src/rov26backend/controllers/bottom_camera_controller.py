@@ -12,8 +12,6 @@ class BottomCamera(BaseCamera):
             node_name="bottom_camera",
             camera_id="Generic_HD_camera_20201212000000",
             stream_url="rtsp://localhost:8554/live/bottomcam",
-            width=640,
-            height=320,
             fps=30,
         )
 
