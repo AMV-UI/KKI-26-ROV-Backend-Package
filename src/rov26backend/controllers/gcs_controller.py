@@ -22,11 +22,6 @@ class RosGrpcServicer(ServerServicer):
                 latest_tel = self.telemetry_state.get_latest()
                 latest_vis = self.vision_state.get_latest()
                 latest_data = latest_tel | latest_vis
-                # if qr_side_msg is None or qr_side_msg.data not in ["A", "B", "C", "D"]:
-                #     qr = "NOT_FOUND"
-                # else:
-                #     qr = qr_side_msg.data
-                logger.debug(latest_data)
 
                 response = telemetryResponse(**latest_data)
 
