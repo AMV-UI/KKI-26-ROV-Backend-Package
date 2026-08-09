@@ -1,9 +1,7 @@
 import sys
 import logging
 
-if sys.platform == "win32":
-    import wmi
-else:
+if sys.platform != "win32":
     import pyudev
 
 logger = logging.getLogger("ROV.devi")
@@ -17,20 +15,34 @@ def get_webcam_device_idx(target_serial):
 
 
 def _get_webcam_windows(target_serial):
-    c = wmi.WMI()
+    import subprocess
+    
+    # We use PowerShell to natively run the WMI query without needing the pywin32 library
+    cmd = [
+        "powershell",
+        "-NoProfile",
+        "-Command",
+        'Get-WmiObject -Query "SELECT PNPDeviceID FROM Win32_PnPEntity WHERE (PNPClass=\'Camera\' OR PNPClass=\'Image\') AND PNPDeviceID LIKE \'USB%\'" | Select-Object -ExpandProperty PNPDeviceID'
+    ]
 
-    wql = "SELECT * FROM Win32_PnPEntity WHERE (PNPClass='Camera' OR PNPClass='Image') AND PNPDeviceID LIKE 'USB%'"
-    cameras = c.query(wql)
+    try:
+        # CREATE_NO_WINDOW (0x08000000) prevents a black console window from flashing on screen
+        output = subprocess.check_output(cmd, text=True, creationflags=0x08000000)
+        
+        # Clean up the output and sort it exactly like the previous wmi implementation
+        device_ids = [line.strip() for line in output.splitlines() if line.strip()]
+        device_ids = sorted(device_ids)
 
-    cameras = sorted(cameras, key=lambda x: x.PNPDeviceID)
-
-    for index, cam in enumerate(cameras):
-        logger.info(f"{index} {cam}")
-        if cam.PNPDeviceID:
-            hardware_serial = cam.PNPDeviceID.split("\\")[-1]
+        for index, pnp_id in enumerate(device_ids):
+            logger.info(f"{index} {pnp_id}")
+            
+            hardware_serial = pnp_id.split("\\")[-1]
 
             if hardware_serial.lower() == target_serial.lower():
                 return index
+
+    except Exception as e:
+        logger.error(f"Failed to fetch Windows webcams via PowerShell: {e}")
 
     return None
 
@@ -53,3 +65,6 @@ def _get_webcam_linux(target_serial):
                 return int(device.device_node[10:])
 
     return None
+
+if __name__ == "__main__":
+    _get_webcam_windows("dsdsds")
