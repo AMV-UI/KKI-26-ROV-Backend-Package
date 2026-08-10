@@ -10,6 +10,25 @@ import inputs
 # This overwrites the broken LED scanning function with a dummy function that does nothing.
 inputs.DeviceManager._find_leds = lambda self: None
 # ------------------------------------------
+# --- NEW FIX FOR UNKNOWN EVENT CODES ---
+# Prevents the inputs library from crashing when it encounters unmapped hardware axes/buttons.
+
+
+class SafeDict(dict):
+    def __init__(self, original_dict, prefix):
+        super().__init__(original_dict)
+        self.prefix = prefix
+
+    def __missing__(self, key):
+        # Instead of throwing a KeyError, return a safe fallback string
+        return f"{self.prefix}_{key}"
+
+
+# Apply the SafeDict to all of inputs' internal mapping dictionaries
+for dict_name in ['ABS_EVENTS', 'KEY_EVENTS', 'REL_EVENTS', 'MISC_EVENTS']:
+    if hasattr(inputs, dict_name):
+        prefix = f"UNKNOWN_{dict_name.split('_')[0]}"
+        setattr(inputs, dict_name, SafeDict(getattr(inputs, dict_name), prefix))
 
 logger = logging.getLogger("ROV.joystick")
 
