@@ -16,7 +16,9 @@ from rov26backend.generated.server_pb2_grpc import add_ServerServicer_to_server
 
 # 5. Load the rest of your hardware controllers
 from rov26backend.controllers.px4_controller import PixhawkController
-from rov26backend.controllers.joystick_controller import JoystickController
+
+# from rov26backend.controllers.joystick_controller import JoystickController
+from rov26backend.controllers.joystick_windows import JoystickController
 from rov26backend.models.telemetry_state import TelemetryState
 from rov26backend.models.control_state import ControlState
 
@@ -200,9 +202,9 @@ def main():
     front_cam_thread.start()
     bottom_cam_thread.start()
 
-    # while True:
-    #     joystick_controller.update_smoothed_controls(control_state)
-    #     time.sleep(0.01)
+    while True:
+        joystick_controller.update_smoothed_controls(control_state)
+        time.sleep(0.01)
 
     server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
     add_ServerServicer_to_server(RosGrpcServicer(telemetry_state, vision_state), server)
