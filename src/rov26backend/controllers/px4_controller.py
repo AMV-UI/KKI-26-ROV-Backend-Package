@@ -13,8 +13,6 @@ class PixhawkController:
         self.mav = None
         self.rc_chans = None
 
-        self.servo_pwm = 1500
-
     def _get_serial_ports(self):
         dirs = []
         ports = serial.tools.list_ports.comports()
@@ -210,7 +208,19 @@ class PixhawkController:
             ch7,
             ch8,
             0,
+            0,
         )
+        logger.debug(f"""
+                     Sending RC:
+                     ch1: {ch1}
+                     ch2: {ch2}
+                     ch3: {ch3}
+                     ch4: {ch4}
+                     ch5: {ch5}
+                     ch6: {ch6}
+                     ch7: {ch7}
+                     ch8: {ch8}
+                     """)
 
     def _pump_mavlink_messages(self):
         while True:

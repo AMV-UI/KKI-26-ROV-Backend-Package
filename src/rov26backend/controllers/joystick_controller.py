@@ -48,7 +48,7 @@ class JoystickController:
 
         self.MAX_SLEW_PER_SEC = 400  # unit PWM per detik, sesuaikan
         self.last_servo_time = time.time()
-        self.servo_pwm = 500
+        self.servo_pwm = 2500
 
         self.arm1 = ModeButton("")
         self.arm2 = ModeButton("")
@@ -186,6 +186,12 @@ class JoystickController:
                 target_snapshot[i] - self.current_manual_control[i]
             )
 
+            logger.debug(f"""SENDING RC:
+                         forward: {int(self.current_manual_control[0])}
+                         lateral: {int(self.current_manual_control[1])}
+                         vertical:{int(self.current_manual_control[2])}
+                         yaw:     {int(self.current_manual_control[3])}""")
+
         control_state.update(
             forward=int(self.current_manual_control[0]),
             lateral=int(self.current_manual_control[1]),
@@ -209,9 +215,9 @@ class JoystickController:
         # min 500
         # open 1500
         # close tight on 1700
-        self.servo_pwm = max(500, min(1500, self.servo_pwm + delta))
+        self.servo_pwm = max(1700, min(2500, self.servo_pwm + delta))
 
-        logger.info(f"SERVO{self.servo_pwm}")
+        logger.debug(f"SERVO: {self.servo_pwm}")
         control_state.update(servo=int(self.servo_pwm))
 
         return control_state
