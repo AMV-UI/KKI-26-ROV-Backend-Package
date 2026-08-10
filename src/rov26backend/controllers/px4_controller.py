@@ -148,6 +148,7 @@ class PixhawkController:
                 telemetry_state.update(mot4_eff=servo_msg.servo4_raw)
                 telemetry_state.update(mot5_eff=servo_msg.servo5_raw)
                 telemetry_state.update(mot6_eff=servo_msg.servo6_raw)
+                telemetry_state.update(servo_effort=servo_msg.servo9_raw)
 
             if heartbeat is not None:
                 telemetry_state.update(armed=(heartbeat.base_mode & 128) > 0)

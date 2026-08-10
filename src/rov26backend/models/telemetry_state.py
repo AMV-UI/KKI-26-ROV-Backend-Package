@@ -42,6 +42,7 @@ class TelemetryState:
         self.fc_compass_health = False
         self.fc_baro_health = False
         self.armed = False
+        self.servo_effort = 2500
 
     def update(self, **kwargs):
         """
@@ -85,4 +86,5 @@ class TelemetryState:
                 "fc_compass_health": self.fc_compass_health,
                 "fc_baro_health": self.fc_baro_health,
                 "armed": self.armed,
+                "servo_effort": self.servo_effort
             }

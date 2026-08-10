@@ -52,4 +52,5 @@ message telemetryResponse {
   bool fc_compass_health = 27;
   bool fc_baro_health = 28;
   bool armed = 29;
+  servo_effort = 30;
 }

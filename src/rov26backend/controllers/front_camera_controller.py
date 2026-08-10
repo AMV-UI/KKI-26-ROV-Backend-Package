@@ -24,7 +24,8 @@ class FrontCamera(BaseCamera):
             data = obj.data.decode("utf-8")
 
             if data in ["A", "B", "C", "D"]:
-                self.vision_state.update(qr_side=data)
+                self.vision_state.update(qr_side=data, qr_polygon=points)
+                #publish objek polygon ke vision_state
             else:
                 self.vision_state.update(qr_side="NOT_FOUND")
 
