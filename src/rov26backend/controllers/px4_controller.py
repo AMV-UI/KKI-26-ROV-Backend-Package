@@ -172,6 +172,8 @@ class PixhawkController:
             if msg_coor is not None:
                 telemetry_state.update(depth=msg_coor.relative_alt / 1000.0)
 
+            telemetry_state.update(mode=self.get_mode())
+
             # if system_time is not None:
             #     telemetry_state.update(timestamp=None)
 
