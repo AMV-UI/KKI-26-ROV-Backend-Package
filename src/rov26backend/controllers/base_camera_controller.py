@@ -31,7 +31,7 @@ class BaseCamera:
         # Force IPv4 resolution to prevent FFmpeg connection hangs
         self.stream_url = stream_url.replace("localhost", "127.0.0.1")
 
-        self.cap = cv2.VideoCapture(self.camera_idx, cv2.CAP_DSHOW)
+        self.cap = cv2.VideoCapture(self.camera_idx, cv2.CAP_DSHOW) if sys.platform != "linux" else cv2.VideoCapture(self.camera_idx)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)

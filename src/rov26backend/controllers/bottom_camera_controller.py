@@ -13,7 +13,7 @@ class BottomCamera(BaseCamera):
             node_name="bottom_camera",
             camera_id="Generic_HD_camera_20201212000000"
             if sys.platform == "linux"
-            else "7&C0B9667N&0&0000",
+            else "7&C0B9667&0&0000",
             stream_url="rtsp://localhost:8554/live/bottomcam",
             fps=30,
         )
