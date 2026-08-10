@@ -16,6 +16,7 @@ logger = logging.getLogger("ROV.joystick")
 
 class JoystickController:
     def __init__(self):
+        self._detect_gamepad_mode()
         self.axes = {
             "ABS_X": 128,
             "ABS_Y": 128,
@@ -59,8 +60,6 @@ class JoystickController:
 
         self.servo_btn = 0
 
-        self._detect_gamepad_mode()
-
     def _detect_gamepad_mode(self):
         """Checks if the gamepad is XInput (Xbox) or DirectInput and sets defaults."""
         self.is_xinput = False
@@ -80,8 +79,8 @@ class JoystickController:
                 "ABS_Y": 0,
                 "ABS_RX": 0,
                 "ABS_RY": 0,
-                "ABS_Z": 128,
-                "ABS_RZ": 128,
+                "ABS_Z": 0,
+                "ABS_RZ": 0,
             }
         else:
             self.axes = {
@@ -89,8 +88,8 @@ class JoystickController:
                 "ABS_Y": 128,
                 "ABS_Z": 128,
                 "ABS_RZ": 128,
-                "ABS_BRAKE": 128,
-                "ABS_GAS": 128,
+                "ABS_BRAKE": 0,
+                "ABS_GAS": 0,
             }
 
     def _normalize_stick(self, val):
@@ -206,7 +205,11 @@ class JoystickController:
         self.last_servo_time = now
 
         delta = current_servo_btn * self.MAX_SLEW_PER_SEC * dt
-        self.servo_pwm = max(500, min(2500, self.servo_pwm + delta))
+
+        # min 500
+        # open 1500
+        # close tight on 1700
+        self.servo_pwm = max(500, min(1500, self.servo_pwm + delta))
 
         logger.info(f"SERVO{self.servo_pwm}")
         control_state.update(servo=int(self.servo_pwm))

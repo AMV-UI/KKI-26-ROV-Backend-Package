@@ -1,4 +1,5 @@
 from rov26backend.controllers.base_camera_controller import BaseCamera
+import sys
 
 
 class BottomCamera(BaseCamera):
@@ -10,7 +11,9 @@ class BottomCamera(BaseCamera):
     def __init__(self):
         super().__init__(
             node_name="bottom_camera",
-            camera_id="Generic_HD_camera_20201212000000",
+            camera_id="Generic_HD_camera_20201212000000"
+            if sys.platform == "linux"
+            else "7&297FDF76&0&0000",
             stream_url="rtsp://localhost:8554/live/bottomcam",
             fps=30,
         )

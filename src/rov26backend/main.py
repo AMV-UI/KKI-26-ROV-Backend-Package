@@ -1,21 +1,36 @@
+import os
+import sys
+
+# 1. Force pure-Python Protobuf
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+
+import fastcrc
+import pymavlink
+import numpy
+
+# 3. NOW load OpenCV/Vision modules 
+from rov26backend.models.vision_state import VisionState
+from rov26backend.controllers.front_camera_controller import FrontCamera
+from rov26backend.controllers.bottom_camera_controller import BottomCamera
+
+# 4. THEN load gRPC/Protobuf 
+import grpc
+from rov26backend.controllers.gcs_controller import RosGrpcServicer
+from rov26backend.generated.server_pb2_grpc import add_ServerServicer_to_server
+
+# 5. Load the rest of your hardware controllers
 from rov26backend.controllers.px4_controller import PixhawkController
 from rov26backend.controllers.joystick_controller import JoystickController
 from rov26backend.models.telemetry_state import TelemetryState
-from rov26backend.models.vision_state import VisionState
 from rov26backend.models.control_state import ControlState
-from rov26backend.controllers.gcs_controller import RosGrpcServicer
-from rov26backend.controllers.front_camera_controller import FrontCamera
-from rov26backend.controllers.bottom_camera_controller import BottomCamera
-from rov26backend.generated.server_pb2_grpc import add_ServerServicer_to_server
 
+# 4. Standard libraries
 import time
 import threading
-import grpc
 import concurrent.futures
 import logging
 from logging.handlers import QueueHandler, QueueListener
 import queue
-import os
 
 logger = logging.getLogger("ROV.main")
 
@@ -136,6 +151,7 @@ def control_loop(
 
 
 def front_cam_loop(front_cam, shutdown_event):
+
     while not shutdown_event.is_set():
         front_cam.run()
 
