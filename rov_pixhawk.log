@@ -555,3 +555,4 @@
 2026-08-07 14:00:19,513 - MainThread - INFO - Pixhawk found on /dev/ttyACM1
 2026-08-07 14:00:19,513 - MainThread - INFO - Arming motors ...
 2026-08-07 14:00:20,521 - MainThread - INFO - Motor Armed!
+2026-08-07 16:51:02,593 - Control - INFO - Available USB ports: ['COM4', 'COM3']
