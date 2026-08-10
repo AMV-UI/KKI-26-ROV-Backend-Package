@@ -8,6 +8,10 @@ class VisionState:
         self.qr_side = "NOT_FOUND"
         self.qr_polygon = []
 
+        self.tvec = None
+        self.rvec = None
+        self.euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
+
     def update(self, **kwargs):
         """
         Safely updates only the provided fields.
@@ -25,5 +29,8 @@ class VisionState:
         with self.lock:
             return {
                 "qr_side": self.qr_side,
-                "qr_polygon": self.qr_polygon
+                "qr_polygon": self.qr_polygon,
+                "tvec": self.tvec, 
+                "rvec": self.rvec,
+                "euler_angles": self.euler_angles,
             }
