@@ -16,8 +16,9 @@ dependencies = [
     "wmi ~= 1.4; sys_platform == 'win32'",
     "pywin32; sys_platform == 'win32'",
     "pyudev ~= 0.24; sys_platform == 'linux'",
-    "imageio-ffmpeg ~= 0.4"
-    "simple-pid ~= 2.0"
+    "imageio-ffmpeg ~= 0.4",
+    "simple-pid ~= 2.0",
+    "pygame ~= 2.6"
 ]
 
 authors = [
