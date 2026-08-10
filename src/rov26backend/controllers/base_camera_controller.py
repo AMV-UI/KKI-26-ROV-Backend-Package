@@ -3,6 +3,7 @@ import subprocess
 import imageio_ffmpeg
 from rov26backend.utils.device_fetching import get_webcam_device_idx
 import logging
+import sys
 
 logger = logging.getLogger("ROV.vis")
 
