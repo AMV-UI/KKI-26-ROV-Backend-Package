@@ -36,7 +36,7 @@ class telemetryRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class telemetryResponse(_message.Message):
-    __slots__ = ("mode", "battery", "timestamp", "qr_side", "depth", "fc_cpu_load", "fc_gyro_health", "rollspeed", "pitchspeed", "yawspeed", "roll", "pitch", "yaw", "forward_rc", "lateral_rc", "vertical_rc", "yaw_rc", "mot1_eff", "mot2_eff", "mot3_eff", "mot4_eff", "mot5_eff", "mot6_eff", "fc_acc_health", "fc_compass_health", "fc_baro_health", "armed")
+    __slots__ = ("mode", "battery", "timestamp", "qr_side", "depth", "fc_cpu_load", "fc_gyro_health", "rollspeed", "pitchspeed", "yawspeed", "roll", "pitch", "yaw", "forward_rc", "lateral_rc", "vertical_rc", "yaw_rc", "mot1_eff", "mot2_eff", "mot3_eff", "mot4_eff", "mot5_eff", "mot6_eff", "fc_acc_health", "fc_compass_health", "fc_baro_health", "armed", "servo_effort")
     MODE_FIELD_NUMBER: _ClassVar[int]
     BATTERY_FIELD_NUMBER: _ClassVar[int]
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
@@ -64,6 +64,7 @@ class telemetryResponse(_message.Message):
     FC_COMPASS_HEALTH_FIELD_NUMBER: _ClassVar[int]
     FC_BARO_HEALTH_FIELD_NUMBER: _ClassVar[int]
     ARMED_FIELD_NUMBER: _ClassVar[int]
+    SERVO_EFFORT_FIELD_NUMBER: _ClassVar[int]
     mode: Mode
     battery: float
     timestamp: _timestamp_pb2.Timestamp
@@ -91,4 +92,5 @@ class telemetryResponse(_message.Message):
     fc_compass_health: bool
     fc_baro_health: bool
     armed: bool
-    def __init__(self, mode: _Optional[_Union[Mode, str]] = ..., battery: _Optional[float] = ..., timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., qr_side: _Optional[_Union[Side, str]] = ..., depth: _Optional[float] = ..., fc_cpu_load: _Optional[bool] = ..., fc_gyro_health: _Optional[bool] = ..., rollspeed: _Optional[float] = ..., pitchspeed: _Optional[float] = ..., yawspeed: _Optional[float] = ..., roll: _Optional[float] = ..., pitch: _Optional[float] = ..., yaw: _Optional[float] = ..., forward_rc: _Optional[int] = ..., lateral_rc: _Optional[int] = ..., vertical_rc: _Optional[int] = ..., yaw_rc: _Optional[int] = ..., mot1_eff: _Optional[int] = ..., mot2_eff: _Optional[int] = ..., mot3_eff: _Optional[int] = ..., mot4_eff: _Optional[int] = ..., mot5_eff: _Optional[int] = ..., mot6_eff: _Optional[int] = ..., fc_acc_health: _Optional[bool] = ..., fc_compass_health: _Optional[bool] = ..., fc_baro_health: _Optional[bool] = ..., armed: _Optional[bool] = ...) -> None: ...
+    servo_effort: int
+    def __init__(self, mode: _Optional[_Union[Mode, str]] = ..., battery: _Optional[float] = ..., timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., qr_side: _Optional[_Union[Side, str]] = ..., depth: _Optional[float] = ..., fc_cpu_load: _Optional[bool] = ..., fc_gyro_health: _Optional[bool] = ..., rollspeed: _Optional[float] = ..., pitchspeed: _Optional[float] = ..., yawspeed: _Optional[float] = ..., roll: _Optional[float] = ..., pitch: _Optional[float] = ..., yaw: _Optional[float] = ..., forward_rc: _Optional[int] = ..., lateral_rc: _Optional[int] = ..., vertical_rc: _Optional[int] = ..., yaw_rc: _Optional[int] = ..., mot1_eff: _Optional[int] = ..., mot2_eff: _Optional[int] = ..., mot3_eff: _Optional[int] = ..., mot4_eff: _Optional[int] = ..., mot5_eff: _Optional[int] = ..., mot6_eff: _Optional[int] = ..., fc_acc_health: _Optional[bool] = ..., fc_compass_health: _Optional[bool] = ..., fc_baro_health: _Optional[bool] = ..., armed: _Optional[bool] = ..., servo_effort: _Optional[int] = ...) -> None: ...

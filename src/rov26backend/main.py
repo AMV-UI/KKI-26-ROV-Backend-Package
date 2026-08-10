@@ -200,6 +200,10 @@ def main():
     front_cam_thread.start()
     bottom_cam_thread.start()
 
+    # while True:
+    #     joystick_controller.update_smoothed_controls(control_state)
+    #     time.sleep(0.01)
+
     server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
     add_ServerServicer_to_server(RosGrpcServicer(telemetry_state, vision_state), server)
     server.add_insecure_port("[::]:50051")

@@ -6,7 +6,6 @@ class VisionState:
         self.lock = threading.Lock()
 
         self.qr_side = "NOT_FOUND"
-        self.qr_polygon = []
 
     def update(self, **kwargs):
         """
@@ -25,5 +24,4 @@ class VisionState:
         with self.lock:
             return {
                 "qr_side": self.qr_side,
-                "qr_polygon": self.qr_polygon
             }
