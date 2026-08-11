@@ -1,4 +1,4 @@
-class ModeButton:
+class PressButton:
     def __init__(self, mode_name):
         self.pressed = False
         self.mode_name = mode_name
