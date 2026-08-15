@@ -10,6 +10,7 @@ class VisionState:
         self.tvec = None
         self.rvec = None
         self.euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
+        self.qr_polygon = None
 
     def update(self, **kwargs):
         """
@@ -29,7 +30,7 @@ class VisionState:
             return {
                 "qr_side": self.qr_side,
                 "qr_polygon": self.qr_polygon,
-                "tvec": self.tvec, 
+                "tvec": self.tvec,
                 "rvec": self.rvec,
                 "euler_angles": self.euler_angles,
             }

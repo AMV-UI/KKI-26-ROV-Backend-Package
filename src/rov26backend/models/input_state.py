@@ -1,47 +1,24 @@
 import threading
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any
 import copy
 
 
 @dataclass
-class TelemetryState:
-    mode: str = "MANUAL"
-    battery: float = 0.0
-    timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-
-    # Attitude & Depth
-    depth: float = 0.0
-    yaw: float = 0.0
-    roll: float = 0.0
-    pitch: float = 0.0
-    yawspeed: float = 0.0
-    rollspeed: float = 0.0
-    pitchspeed: float = 0.0
-
-    # RC Channels (1500 is standard MAVLink neutral)
-    forward_rc: int = 1500
-    lateral_rc: int = 1500
-    vertical_rc: int = 1500
-    yaw_rc: int = 1500
-
-    # Motor Efforts
-    mot1_eff: int = 0
-    mot2_eff: int = 0
-    mot3_eff: int = 0
-    mot4_eff: int = 0
-    mot5_eff: int = 0
-    mot6_eff: int = 0
-
-    # Flight Controller Status
-    fc_cpu_load: bool = False
-    fc_gyro_health: bool = False
-    fc_acc_health: bool = False
-    fc_compass_health: bool = False
-    fc_baro_health: bool = False
-    armed: bool = False
-    servo_effort: int = 2500
+class InputState:
+    l_analog_x: float = 0.0
+    l_analog_y: float = 0.0
+    r_analog_x: float = 0.0
+    r_analog_y: float = 0.0
+    rt_analog: float = 0.0
+    lt_analog: float = 0.0
+    rb: bool = False
+    lb: bool = False
+    btn_up: bool = False
+    btn_right: bool = False
+    btn_left: bool = False
+    btn_down: bool = False
+    dpad_vert: int = 0
 
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.
@@ -56,7 +33,7 @@ class TelemetryState:
                 if hasattr(self, key) and key != "_lock":
                     setattr(self, key, value)
 
-    def get_latest(self) -> "TelemetryState":
+    def get_latest(self) -> "InputState":
         """Returns a thread-safe snapshot of the current state as an object."""
         with self._lock:
             # We copy so the receiver doesn't accidentally modify the live state

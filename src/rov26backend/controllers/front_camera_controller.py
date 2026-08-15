@@ -9,15 +9,15 @@ from rov26backend.models.vision_state import VisionState
 
 
 class FrontCamera(BaseCamera):
-
-    def __init__(self, vision_state: VisionState):
+    def __init__(
+        self,
+        vision_state: VisionState,
+        camera_id="046d_C270_HD_WEBCAM_55E22480"
+        if sys.platform == "linux"
+        else "7&2C094952&0&0000",
+    ):
         super().__init__(
-            node_name="front_camera",
-            camera_id=(
-                "046d_C270_HD_WEBCAM_55E22480"
-                if sys.platform == "linux"
-                else "7&2C094952&0&0000"
-            ),
+            camera_id=camera_id,
             stream_url="rtsp://localhost:8554/live/frontcam",
         )
         self.vision_state = vision_state
@@ -29,9 +29,7 @@ class FrontCamera(BaseCamera):
         self.is_running = True
 
         # Thread terpisah untuk pemrosesan vision
-        self.worker_thread = threading.Thread(
-            target=self._process_loop, daemon=True
-        )
+        self.worker_thread = threading.Thread(target=self._process_loop, daemon=True)
         self.worker_thread.start()
 
     def update_frame(self, frame):
@@ -49,9 +47,7 @@ class FrontCamera(BaseCamera):
 
             if frame_to_process is not None:
                 self.process_and_publish(frame_to_process)
-                time.sleep(
-                    0.01
-                )  # Beri sedikit jeda agar CPU tidak 100% usage
+                time.sleep(0.01)  # Beri sedikit jeda agar CPU tidak 100% usage
             else:
                 time.sleep(0.02)
 

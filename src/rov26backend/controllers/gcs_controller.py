@@ -1,5 +1,6 @@
 import time
 
+from dataclasses import asdict
 
 from rov26backend.generated.server_pb2 import telemetryRequest, telemetryResponse
 from rov26backend.generated.server_pb2_grpc import ServerServicer
@@ -19,9 +20,10 @@ class RosGrpcServicer(ServerServicer):
         """This runs in a gRPC worker thread"""
         try:
             while context.is_active():
-                latest_tel = self.telemetry_state.get_latest()
+                latest_tel = asdict(self.telemetry_state.get_latest())
                 latest_vis = self.vision_state.get_latest()
-                latest_data = latest_tel | latest_vis
+                latest_tel.update({"qr_side": latest_vis["qr_side"]})
+                latest_data = latest_tel
 
                 response = telemetryResponse(**latest_data)
 

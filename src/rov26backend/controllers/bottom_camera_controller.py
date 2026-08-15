@@ -8,12 +8,14 @@ class BottomCamera(BaseCamera):
     Handles specific downward-facing computer vision.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        camera_id="046d_C270_HD_WEBCAM_55E22480"
+        if sys.platform == "linux"
+        else "7&2C094952&0&0000",
+    ):
         super().__init__(
-            node_name="bottom_camera",
-            camera_id="Generic_HD_camera_20201212000000"
-            if sys.platform == "linux"
-            else "7&C0B9667&0&0000",
+            camera_id=camera_id,
             stream_url="rtsp://localhost:8554/live/bottomcam",
             fps=30,
         )

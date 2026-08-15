@@ -35,7 +35,8 @@ license = "MIT"
 license-files = ["LICEN[CS]E*"]
 
 [project.scripts]
-gawerov = "rov26backend.main:main"
+gawerov = "rov26backend.main_refact:main"
+gawerovold = "rov26backend.main:main"
 
 [project.urls]
 Homepage = "https://github.com/AMV-UI/KKI-26-ROV-Backend-Package"
