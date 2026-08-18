@@ -12,8 +12,8 @@ class FrontCamera(BaseCamera):
     def __init__(
         self,
         vision_state: VisionState,
-        # camera_id="046d_C270_HD_WEBCAM_55E22480"
-        camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD"
+        camera_id="046d_C270_HD_WEBCAM_55E22480"
+        # camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD"
         if sys.platform == "linux"
         else "7&2C094952&0&0000",
     ):
