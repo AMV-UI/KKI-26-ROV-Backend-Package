@@ -1,20 +1,20 @@
 import logging
 import cv2
 import numpy as np
+import time
 
-logger = logging.getLogger("ROV.solvePnP")
+logger = logging.getLogger("ROV.vision")
 
 
 class solvePnP:
-
     def __init__(self, vision_state):
         self.vision_state = vision_state
 
         # Camera Matrix (Kalibrasi 1080p)
         self.camera_matrix = np.array(
             [
-                [1164.0743995447119, 0.0, 980.03650102852032],
-                [0.0, 1158.2462609239342, 562.2397226536624],
+                [1261.616988791761, 0.0, 261.6271004104672],
+                [0.0, 1251.9246045054717, 266.21319058087386],
                 [0.0, 0.0, 1.0],
             ],
             dtype=np.float32,
@@ -28,11 +28,11 @@ class solvePnP:
         # Distortion Coefficients
         self.dist_coeffs = np.array(
             [
-                -0.081632802945328112,
-                0.029020913802887096,
-                -0.0015049443976139964,
-                -0.00088117174435944933,
-                -0.053633582926546026,
+                3.95003433e-01,
+                8.73422864e00,
+                1.57939148e-02,
+                -5.80052436e-02,
+                -1.41160080e02,
             ],
             dtype=np.float32,
         )
@@ -87,11 +87,19 @@ class solvePnP:
             }
 
             # Update ke VisionState
-            self.vision_state.update(
-                tvec=tvec.flatten().tolist(),  # [tx, ty, tz]
-                rvec=rvec.flatten().tolist(),  # [rx, ry, rz]
-                euler_angles=euler,
-            )
+            with self.vision_state as vision_state:
+                vision_state.tvec = tvec.flatten().tolist()
+                vision_state.rvec = rvec.flatten().tolist()
+                vision_state.euler_angles = euler
+
+            logger.debug(f"""
+                         tvec: {tvec.flatten().tolist()}
+                         rvec: {rvec.flatten().tolist()}
+                         euler: {euler}
+                         """)
+            logger.debug(self.vision_state.get_latest().tvec)
             return True, rvec, tvec
+
+        time.sleep(0.01)
 
         return False, None, None

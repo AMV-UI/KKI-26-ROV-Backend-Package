@@ -1,36 +1,43 @@
 import threading
+from dataclasses import dataclass
+from typing import Any
+import copy
 
 
+@dataclass
 class VisionState:
-    def __init__(self):
-        self.lock = threading.Lock()
+    qr_side: str = "NOT_FOUND"
+    tvec = None
+    rvec = None
+    euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
+    qr_polygon = None
 
-        self.qr_side = "NOT_FOUND"
+    def __post_init__(self):
+        # __post_init__ runs after the dataclass sets up the fields.
+        # By not type-hinting _lock, it is excluded from asdict() and dataclass fields.
+        self._lock = threading.Lock()
 
-        self.tvec = None
-        self.rvec = None
-        self.euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
-        self.qr_polygon = None
-
-    def update(self, **kwargs):
-        """
-        Safely updates only the provided fields.
-        Example: state.update(roll=12.5, pitch=5.2)
-        """
-        with self.lock:
+    def update(self, **kwargs: Any) -> None:
+        """Maintains dynamic partial updates."""
+        with self._lock:
             for key, value in kwargs.items():
-                if hasattr(self, key):
+                # Prevent accidental creation of new fields or overriding the lock
+                if hasattr(self, key) and key != "_lock":
                     setattr(self, key, value)
 
-    def get_latest(self):
-        """
-        Safely grabs a snapshot of all current values for the gRPC stream.
-        """
-        with self.lock:
-            return {
-                "qr_side": self.qr_side,
-                "qr_polygon": self.qr_polygon,
-                "tvec": self.tvec,
-                "rvec": self.rvec,
-                "euler_angles": self.euler_angles,
-            }
+    def get_latest(self) -> "VisionState":
+        """Returns a thread-safe snapshot of the current state as an object."""
+        with self._lock:
+            # We copy so the receiver doesn't accidentally modify the live state
+            # (We drop the lock during the copy so the snapshot doesn't have a locked lock)
+            snapshot = copy.copy(self)
+            snapshot._lock = threading.Lock()  # Reset lock on the copy
+            return snapshot
+
+    # --- Optional: Context Manager for better LSP autocomplete ---
+    def __enter__(self):
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._lock.release()

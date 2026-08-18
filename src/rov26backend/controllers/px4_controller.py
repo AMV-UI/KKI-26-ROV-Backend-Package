@@ -12,7 +12,12 @@ logger = logging.getLogger("ROV.px4")
 
 
 class PixhawkController:
-    def __init__(self, control_state: ControlState, telemetry_state: TelemetryState):
+    def __init__(
+        self,
+        control_state: ControlState,
+        telemetry_state: TelemetryState,
+        auto_event: threading.Event,
+    ):
         self.master = None
         self.pxmode = "MANUAL"
         self.mav = None
@@ -21,6 +26,7 @@ class PixhawkController:
         self._is_running = threading.Event()
         self.control_state = control_state
         self.telemetry_state = telemetry_state
+        self.auto_event = auto_event
 
     def start(self):
         if self._thread is None:
@@ -60,7 +66,13 @@ class PixhawkController:
 
             target_mode = latest_control_state.target_mode
             if target_mode is not None:
-                self.set_mode(target_mode)
+                if target_mode == "AUTO":
+                    self.set_mode("ALT_HOLD")
+                    self.auto_event.set()
+                    logger.info("Mode set to : Auto")
+                else:
+                    self.set_mode(target_mode)
+                    logger.info(f"Mode set to : {self.pxmode}")
                 with self.control_state as control:
                     control.target_mode = None
 
@@ -265,7 +277,6 @@ class PixhawkController:
             mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
             mode_id,
         )
-        logger.info(f"Mode set to : {self.pxmode}")
 
     def rc_channels_override_send(self, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8):
         self.master.mav.rc_channels_override_send(

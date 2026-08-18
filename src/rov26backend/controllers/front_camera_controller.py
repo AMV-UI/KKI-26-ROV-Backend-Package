@@ -12,7 +12,8 @@ class FrontCamera(BaseCamera):
     def __init__(
         self,
         vision_state: VisionState,
-        camera_id="046d_C270_HD_WEBCAM_55E22480"
+        # camera_id="046d_C270_HD_WEBCAM_55E22480"
+        camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD"
         if sys.platform == "linux"
         else "7&2C094952&0&0000",
     ):
@@ -55,7 +56,9 @@ class FrontCamera(BaseCamera):
         decoded_objects = decode(frame)
 
         if not decoded_objects:
-            self.vision_state.update(qr_side="NOT_FOUND", qr_polygon=[])
+            with self.vision_state as vision_state:
+                vision_state.qr_side = "NOT_FOUND"
+                vision_state.qr_polygon = []
             self.pnp_solver.process([])
             return
 
@@ -64,7 +67,9 @@ class FrontCamera(BaseCamera):
             points = [(pt.x, pt.y) for pt in obj.polygon]
 
             side_status = data if data in ["A", "B", "C", "D"] else "NOT_FOUND"
-            self.vision_state.update(qr_side=side_status, qr_polygon=points)
+            with self.vision_state as vision_state:
+                vision_state.qr_side = side_status
+                vision_state.qr_polygon = points
 
             # Hitung SolvePnP dan update tvec/rvec ke VisionState
             success, rvec, tvec = self.pnp_solver.process(points)

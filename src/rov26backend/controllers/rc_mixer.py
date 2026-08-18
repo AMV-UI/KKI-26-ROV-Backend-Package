@@ -16,9 +16,9 @@ class ROV26RcMixer:
         control_state: ControlState,
         smoothing_factor=0.025,
         pwm_center=1500,
-        pwm_range=400,
-        pwm_min=1300,
-        pwm_max=1700,
+        pwm_range=500,
+        pwm_min=1200,
+        pwm_max=1800,
         MAX_SLEW_PER_SEC=400,
     ):
         self.smoothing_factor = smoothing_factor
@@ -85,7 +85,6 @@ class ROV26RcMixer:
                       vertical: {self.current_vertical}
                       yaw: {self.current_yaw}
                       servo: {self.servo_pwm}
-                      target_mode: {self.target_mode}
                       """)
 
         with self.control_state as control:
@@ -94,7 +93,6 @@ class ROV26RcMixer:
             control.vertical = int(self.current_vertical)
             control.yaw = int(self.current_yaw)
             control.servo = int(self.servo_pwm)
-            control.target_mode = self.target_mode
 
     def _update_servo_inputs(self, inputs: InputState):
         now = time.time()
@@ -106,17 +104,18 @@ class ROV26RcMixer:
         self.servo_pwm = max(1700, min(2500, self.servo_pwm + delta))
 
     def _update_mode_inputs(self, inputs: InputState):
-        if self.manual_btn.toggle(inputs.btn_down):
-            self.target_mode = "MANUAL"
-        elif self.stabilize_btn.toggle(inputs.btn_right):
-            self.target_mode = "STABILIZE"
-        elif self.stabilize_btn.toggle(inputs.btn_left):
-            self.target_mode = "ALT_HOLD"
-        elif self.autonomous_btn.toggle(inputs.btn_up):
-            self.target_mode = None
+        with self.control_state as control:
+            if self.manual_btn.toggle(inputs.btn_down):
+                control.target_mode = "MANUAL"
+            elif self.stabilize_btn.toggle(inputs.btn_right):
+                control.target_mode = "STABILIZE"
+            elif self.depth_hold_btn.toggle(inputs.btn_left):
+                control.target_mode = "ALT_HOLD"
+            elif self.autonomous_btn.toggle(inputs.btn_up):
+                control.target_mode = "AUTO"
 
-        if self.arm_btn.toggle(inputs.lb, inputs.rb):
-            self.arm_toggle = True
+            if self.arm_btn.toggle(inputs.lb, inputs.rb):
+                control.arm_toggle = True
 
     def _update_motor_inputs(self, inputs: InputState):
         raw_lateral = inputs.l_analog_x

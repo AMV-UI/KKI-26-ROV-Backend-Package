@@ -1,9 +1,11 @@
 import os
 import sys
 import argparse
+import threading
 
 # 1. Force pure-Python Protobuf
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 
 # 3. NOW load OpenCV/Vision modules
 
@@ -22,6 +24,7 @@ if sys.platform == "win32":
 
 from rov26backend.controllers.rc_mixer import ROV26RcMixer
 from rov26backend.controllers.px4_controller import PixhawkController
+from rov26backend.controllers.rov26autonomous import Rov26Autonomous
 
 from rov26backend.models.input_state import InputState
 from rov26backend.models.control_state import ControlState
@@ -67,6 +70,16 @@ def setup_logging():
     mixer_handler.setFormatter(file_formatter)
     mixer_handler.addFilter(logging.Filter("ROV.mixer"))
 
+    vision_handler = logging.FileHandler(os.path.abspath("rov_vision.log"))
+    vision_handler.setLevel(logging.DEBUG)
+    vision_handler.setFormatter(file_formatter)
+    vision_handler.addFilter(logging.Filter("ROV.vision"))
+
+    auto_handler = logging.FileHandler(os.path.abspath("rov_auto.log"))
+    auto_handler.setLevel(logging.DEBUG)
+    auto_handler.setFormatter(file_formatter)
+    auto_handler.addFilter(logging.Filter("ROV.auto"))
+
     grpc_handler = logging.FileHandler(os.path.abspath("rov_grpc.log"))
     grpc_handler.setLevel(logging.DEBUG)
     grpc_handler.setFormatter(file_formatter)
@@ -79,6 +92,8 @@ def setup_logging():
         joy_handler,
         grpc_handler,
         mixer_handler,
+        vision_handler,
+        auto_handler,
         respect_handler_level=True,
     )
     listener.start()
@@ -175,12 +190,98 @@ def parse_arguments():
         help="Port to run the gRPC server on",
     )
 
+    # ==========================================
+    # Autonomous Target Config
+    # ==========================================
+    parser.add_argument(
+        "--target-x", type=float, default=0.0, help="Target X coordinate"
+    )
+    parser.add_argument(
+        "--target-y", type=float, default=0.0, help="Target Y coordinate"
+    )
+    parser.add_argument(
+        "--target-z", type=float, default=0.0, help="Target Z coordinate"
+    )
+    parser.add_argument(
+        "--target-yaw", type=float, default=0.0, help="Target Yaw angle"
+    )
+
+    # ==========================================
+    # Autonomous PID Configs
+    # ==========================================
+    # Forward
+    parser.add_argument(
+        "--forward-kp", type=float, default=argparse.SUPPRESS, help="Forward PID Kp"
+    )
+    parser.add_argument(
+        "--forward-ki", type=float, default=argparse.SUPPRESS, help="Forward PID Ki"
+    )
+    parser.add_argument(
+        "--forward-kd", type=float, default=argparse.SUPPRESS, help="Forward PID Kd"
+    )
+    parser.add_argument(
+        "--forward-deadzone",
+        type=float,
+        default=argparse.SUPPRESS,
+        help="Forward Deadzone",
+    )
+
+    # Lateral
+    parser.add_argument(
+        "--lateral-kp", type=float, default=argparse.SUPPRESS, help="Lateral PID Kp"
+    )
+    parser.add_argument(
+        "--lateral-ki", type=float, default=argparse.SUPPRESS, help="Lateral PID Ki"
+    )
+    parser.add_argument(
+        "--lateral-kd", type=float, default=argparse.SUPPRESS, help="Lateral PID Kd"
+    )
+    parser.add_argument(
+        "--lateral-deadzone",
+        type=float,
+        default=argparse.SUPPRESS,
+        help="Lateral Deadzone",
+    )
+
+    # Vertical
+    parser.add_argument(
+        "--vertical-kp", type=float, default=argparse.SUPPRESS, help="Vertical PID Kp"
+    )
+    parser.add_argument(
+        "--vertical-ki", type=float, default=argparse.SUPPRESS, help="Vertical PID Ki"
+    )
+    parser.add_argument(
+        "--vertical-kd", type=float, default=argparse.SUPPRESS, help="Vertical PID Kd"
+    )
+    parser.add_argument(
+        "--vertical-deadzone",
+        type=float,
+        default=argparse.SUPPRESS,
+        help="Vertical Deadzone",
+    )
+
+    # Yaw
+    parser.add_argument(
+        "--yaw-kp", type=float, default=argparse.SUPPRESS, help="Yaw PID Kp"
+    )
+    parser.add_argument(
+        "--yaw-ki", type=float, default=argparse.SUPPRESS, help="Yaw PID Ki"
+    )
+    parser.add_argument(
+        "--yaw-kd", type=float, default=argparse.SUPPRESS, help="Yaw PID Kd"
+    )
+    parser.add_argument(
+        "--yaw-deadzone", type=float, default=argparse.SUPPRESS, help="Yaw Deadzone"
+    )
+
     return parser.parse_args()
 
 
 def main():
     logger, log_listener = setup_logging()
     args = parse_arguments()
+
+    auto_event = threading.Event()
 
     input_state = InputState()
     control_state = ControlState()
@@ -222,9 +323,12 @@ def main():
         rc_mixer = ROV26RcMixer(input_state, control_state, **mixer_kwargs)
         rc_mixer.start()
 
+    autonomous = Rov26Autonomous(control_state, vision_state, auto_event, args)
+    autonomous.start()
+
     # --- 3. Mikon / Pixhawk Initialization ---
     if not args.no_mikon:
-        mikon = PixhawkController(control_state, telemetry_state)
+        mikon = PixhawkController(control_state, telemetry_state, auto_event)
         mikon.start()
 
     # --- 4. Front Camera Initialization ---
@@ -277,6 +381,8 @@ def main():
             joystick.stop()
         if mikon:
             mikon.stop()
+        if autonomous:
+            autonomous.stop()
 
         logger.info("Waiting for threads to exit...")
         logger.info("All threads stopped. Goodbye.")
