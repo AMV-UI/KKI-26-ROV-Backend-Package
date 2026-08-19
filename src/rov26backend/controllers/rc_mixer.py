@@ -20,7 +20,7 @@ class ROV26RcMixer:
         pwm_min=1300,
         pwm_max=1700,
         servo_open=1700,
-        servo_close=1700,
+        servo_close=2500,
     ):
         self.smoothing_factor = smoothing_factor
         self.servo_open = servo_open
