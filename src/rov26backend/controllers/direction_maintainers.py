@@ -19,6 +19,7 @@ class DirectionMaintainer:
         deadzone=0.5,
     ):
         self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target)
+        self.pid.output_limits = (-100, 100)
         self.target = target
         self.control_state = control_state
         self.vision_state = vision_state
@@ -46,7 +47,7 @@ class DirectionMaintainer:
             logger.debug(
                 f"[{self.__class__.__name__}] Tracking loop | Current: {current:.3f}, Error: {abs(current - self.target):.3f}, PID Output: {output:.3f}"
             )
-            self.control_to(max(1600, min(1400, int(output))))
+            self.control_to(int(1500 + output))
             time.sleep(0.01)
 
         logger.info(
