@@ -324,7 +324,7 @@ def main():
             if key.startswith("mixer_")
         }
 
-        rc_mixer = ROV26RcMixer(input_state, control_state, **mixer_kwargs)
+        rc_mixer = ROV26RcMixer(input_state, control_state, auto_event, **mixer_kwargs)
         rc_mixer.start()
 
     autonomous = Rov26Autonomous(control_state, vision_state, auto_event, args)

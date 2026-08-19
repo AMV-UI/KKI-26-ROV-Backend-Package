@@ -14,17 +14,27 @@ class ROV26RcMixer:
         self,
         input_state: InputState,
         control_state: ControlState,
+        auto_event: threading.Event,
         smoothing_factor=0.025,
         pwm_center=1500,
         pwm_range=500,
         pwm_min=1300,
         pwm_max=1700,
         servo_open=1700,
-        servo_close=2500,
+        servo_close=2280,
     ):
         self.smoothing_factor = smoothing_factor
         self.servo_open = servo_open
         self.servo_close = servo_close
+        self.servo_target = 1700
+
+        self.auto_event = auto_event
+
+        self.last_servo_time = time.time()
+
+        self.MAX_SLEW_PER_SEC = 400
+
+        self.servo_pwm = 1700
 
         self.current_forward = 1500
         self.current_lateral = 1500
@@ -84,20 +94,24 @@ class ROV26RcMixer:
                       lateral: {self.current_lateral}
                       vertical: {self.current_vertical}
                       yaw: {self.current_yaw}
+                      servo: {self.servo_pwm}
                       """)
 
-        with self.control_state as control:
-            control.forward = int(self.current_forward)
-            control.lateral = int(self.current_lateral)
-            control.vertical = int(self.current_vertical)
-            control.yaw = int(self.current_yaw)
+        if not self.auto_event.is_set():
+            with self.control_state as control:
+                control.forward = int(self.current_forward)
+                control.lateral = int(self.current_lateral)
+                control.vertical = int(self.current_vertical)
+                control.yaw = int(self.current_yaw)
 
     def _update_servo_inputs(self, inputs: InputState):
+        if inputs.dpad_vert == -1:
+            self.servo_target = 1700
+        elif inputs.dpad_vert == 1:
+            self.servo_target = 2280
+        self.servo_pwm += self.smoothing_factor * (self.servo_target - self.servo_pwm)
         with self.control_state as control:
-            if inputs.dpad_vert == 1:
-                control.servo = self.servo_open
-            elif inputs.dpad_vert == -1:
-                control.servo = self.servo_close
+            control.servo = int(self.servo_pwm)
 
     def _update_mode_inputs(self, inputs: InputState):
         with self.control_state as control:

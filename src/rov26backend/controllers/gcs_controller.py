@@ -21,8 +21,8 @@ class RosGrpcServicer(ServerServicer):
         try:
             while context.is_active():
                 latest_tel = asdict(self.telemetry_state.get_latest())
-                latest_vis = self.vision_state.get_latest()
-                latest_tel.update({"qr_side": latest_vis["qr_side"]})
+                latest_vis = self.vision_state.get_latest().qr_side
+                latest_tel.update({"qr_side": latest_vis})
                 latest_data = latest_tel
 
                 response = telemetryResponse(**latest_data)

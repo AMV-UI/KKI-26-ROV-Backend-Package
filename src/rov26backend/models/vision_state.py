@@ -7,8 +7,8 @@ import copy
 @dataclass
 class VisionState:
     qr_side: str = "NOT_FOUND"
-    tvec = None
-    rvec = None
+    tvec = [0, 0, 0]
+    rvec = [0, 0, 0]
     euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
     qr_polygon = None
 

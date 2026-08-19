@@ -11,7 +11,7 @@ service Server {
 enum Mode {
   MANUAL = 0;
   STABILIZE = 1;
-  DEPTH_HOLD = 2;
+  ALT_HOLD = 2;
 }
 
 enum Side {

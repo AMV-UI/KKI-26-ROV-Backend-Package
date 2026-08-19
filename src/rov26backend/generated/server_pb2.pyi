@@ -13,7 +13,7 @@ class Mode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     MANUAL: _ClassVar[Mode]
     STABILIZE: _ClassVar[Mode]
-    DEPTH_HOLD: _ClassVar[Mode]
+    ALT_HOLD: _ClassVar[Mode]
 
 class Side(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -24,7 +24,7 @@ class Side(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     NOT_FOUND: _ClassVar[Side]
 MANUAL: Mode
 STABILIZE: Mode
-DEPTH_HOLD: Mode
+ALT_HOLD: Mode
 A: Side
 B: Side
 C: Side
