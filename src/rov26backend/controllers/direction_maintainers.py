@@ -18,8 +18,7 @@ class DirectionMaintainer:
         kd=0,
         deadzone=0.5,
     ):
-        self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target)
-        self.pid.output_limits = (-100, 100)
+        self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-100, 100))
         self.target = target
         self.control_state = control_state
         self.vision_state = vision_state

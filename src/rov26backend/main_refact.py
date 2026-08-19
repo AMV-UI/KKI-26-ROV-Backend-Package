@@ -132,10 +132,22 @@ def parse_arguments():
 
     # Mixer Config (Using SUPPRESS so the object's constructor defaults take over if not specified)
     parser.add_argument(
-        "--mixer-smoothing",
+        "--mixer-smoothing-factor",
         type=float,
         default=argparse.SUPPRESS,
-        help="RC Mixer smoothing factor",
+        help="RC Mixer smoothing factor for low pass filter",
+    )
+    parser.add_argument(
+        "--mixer-servo-open",
+        type=float,
+        default=argparse.SUPPRESS,
+        help="RC Mixer pwm for opening servo",
+    )
+    parser.add_argument(
+        "--mixer-servo-close",
+        type=float,
+        default=argparse.SUPPRESS,
+        help="RC Mixer pwm for closing servo",
     )
     parser.add_argument(
         "--mixer-pwm-center",
@@ -306,19 +318,11 @@ def main():
 
     # --- 2. RC Mixer Initialization ---
     if not args.no_mixer:
-        mixer_kwargs = {}
-        if hasattr(args, "mixer_smoothing"):
-            mixer_kwargs["smoothing_factor"] = args.mixer_smoothing
-        if hasattr(args, "mixer_pwm_center"):
-            mixer_kwargs["pwm_center"] = args.mixer_pwm_center
-        if hasattr(args, "mixer_pwm_range"):
-            mixer_kwargs["pwm_range"] = args.mixer_pwm_range
-        if hasattr(args, "mixer_pwm_min"):
-            mixer_kwargs["pwm_min"] = args.mixer_pwm_min
-        if hasattr(args, "mixer_pwm_max"):
-            mixer_kwargs["pwm_max"] = args.mixer_pwm_max
-        if hasattr(args, "mixer_max_slew"):
-            mixer_kwargs["MAX_SLEW_PER_SEC"] = args.mixer_max_slew
+        mixer_kwargs = {
+            key.replace("mixer_", ""): value
+            for key, value in vars(args).items()
+            if key.startswith("mixer_")
+        }
 
         rc_mixer = ROV26RcMixer(input_state, control_state, **mixer_kwargs)
         rc_mixer.start()
@@ -333,19 +337,21 @@ def main():
 
     # --- 4. Front Camera Initialization ---
     if not args.no_front_cam:
-        front_cam_kwargs = {}
-        if hasattr(args, "front_cam_id"):
-            front_cam_kwargs["camera_id"] = args.front_cam_id
-
+        front_cam_kwargs = {
+            key.replace("front_cam_", "camera_"): value
+            for key, value in vars(args).items()
+            if key.startswith("front_cam_")
+        }
         front_camera = FrontCamera(vision_state, **front_cam_kwargs)
         front_camera.start()
 
     # --- 5. Bottom Camera Initialization ---
     if not args.no_bottom_cam:
-        bottom_cam_kwargs = {}
-        if hasattr(args, "bottom_cam_id"):
-            bottom_cam_kwargs["camera_id"] = args.bottom_cam_id
-
+        bottom_cam_kwargs = {
+            key.replace("bottom_cam_", "camera_"): value
+            for key, value in vars(args).items()
+            if key.startswith("bottom_cam_")
+        }
         bottom_camera = BottomCamera(**bottom_cam_kwargs)
         bottom_camera.start()
 

@@ -17,18 +17,19 @@ class ROV26RcMixer:
         smoothing_factor=0.025,
         pwm_center=1500,
         pwm_range=500,
-        pwm_min=1200,
-        pwm_max=1800,
-        MAX_SLEW_PER_SEC=400,
+        pwm_min=1300,
+        pwm_max=1700,
+        servo_open=1700,
+        servo_close=1700,
     ):
         self.smoothing_factor = smoothing_factor
-        self.MAX_SLEW_PER_SEC = MAX_SLEW_PER_SEC
+        self.servo_open = servo_open
+        self.servo_close = servo_close
 
         self.current_forward = 1500
         self.current_lateral = 1500
         self.current_vertical = 1500
         self.current_yaw = 1500
-        self.servo_pwm = 1700
 
         self.target_forward = 1500
         self.target_lateral = 1500
@@ -42,7 +43,6 @@ class ROV26RcMixer:
 
         self.target_mode = None
         self.arm_toggle = False
-        self.last_servo_time = time.time()
 
         self.depth_hold_btn = PressButton()
         self.manual_btn = PressButton()
@@ -84,7 +84,6 @@ class ROV26RcMixer:
                       lateral: {self.current_lateral}
                       vertical: {self.current_vertical}
                       yaw: {self.current_yaw}
-                      servo: {self.servo_pwm}
                       """)
 
         with self.control_state as control:
@@ -92,16 +91,13 @@ class ROV26RcMixer:
             control.lateral = int(self.current_lateral)
             control.vertical = int(self.current_vertical)
             control.yaw = int(self.current_yaw)
-            control.servo = int(self.servo_pwm)
 
     def _update_servo_inputs(self, inputs: InputState):
-        now = time.time()
-        dt = now - self.last_servo_time
-        self.last_servo_time = now
-
-        delta = inputs.dpad_vert * self.MAX_SLEW_PER_SEC * dt
-
-        self.servo_pwm = max(1700, min(2500, self.servo_pwm + delta))
+        with self.control_state as control:
+            if inputs.dpad_vert == 1:
+                control.servo = self.servo_open
+            elif inputs.dpad_vert == -1:
+                control.servo = self.servo_close
 
     def _update_mode_inputs(self, inputs: InputState):
         with self.control_state as control:

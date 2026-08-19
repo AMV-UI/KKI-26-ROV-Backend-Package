@@ -10,7 +10,7 @@ class ControlState:
     lateral: int = 1500
     vertical: int = 1500
     yaw: int = 1500
-    servo: int = 1500
+    servo: int = 1700
     target_mode: str = None
     arm_toggle: bool = False
 
