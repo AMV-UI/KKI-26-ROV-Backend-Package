@@ -342,7 +342,7 @@ def main():
             for key, value in vars(args).items()
             if key.startswith("front_cam_")
         }
-        front_camera = FrontCamera(vision_state, **front_cam_kwargs)
+        front_camera = FrontCamera(vision_state, auto_event, **front_cam_kwargs)
         front_camera.start()
 
     # --- 5. Bottom Camera Initialization ---

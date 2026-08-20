@@ -72,6 +72,7 @@ class PixhawkController:
                     logger.info("Mode set to : Auto")
                 else:
                     self.set_mode(target_mode)
+                    self.auto_event.clear()
                     logger.info(f"Mode set to : {self.pxmode}")
                 with self.control_state as control:
                     control.target_mode = None

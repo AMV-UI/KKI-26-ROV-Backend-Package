@@ -49,9 +49,10 @@ class BaseCamera:
                 self.camera_idx = get_webcam_device_idx(self.camera_id)
             self.cap = (
                 cv2.VideoCapture(self.camera_idx, cv2.CAP_DSHOW)
-                if sys.platform != "linux"
+                if sys.platform == "win32"
                 else cv2.VideoCapture(self.camera_idx)
             )
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
             self.cap.set(cv2.CAP_PROP_FPS, self.fps)

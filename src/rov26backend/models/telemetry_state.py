@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 import copy
+import logging
+
+logger = logging.getLogger("ROV.gRPC")
 
 
 @dataclass
@@ -71,4 +74,13 @@ class TelemetryState:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        logger.debug(f"""
+                     Mot 1 Effort: {self.mot1_eff}
+                     Mot 2 Effort: {self.mot2_eff}
+                     Mot 3 Effort: {self.mot3_eff}
+                     Mot 4 Effort: {self.mot4_eff}
+                     Mot 5 Effort: {self.mot5_eff}
+                     Mot 6 Effort: {self.mot6_eff}
+                     """)
+
         self._lock.release()

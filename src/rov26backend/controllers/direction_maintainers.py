@@ -13,12 +13,14 @@ class DirectionMaintainer:
         target,
         vision_state: VisionState,
         control_state: ControlState,
+        auto_event,
         kp=1,
         ki=0,
         kd=0,
         deadzone=0.5,
     ):
         self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-100, 100))
+        self.auto_event = auto_event
         self.target = target
         self.control_state = control_state
         self.vision_state = vision_state
@@ -41,7 +43,10 @@ class DirectionMaintainer:
             f"[{self.__class__.__name__}] Starting track. Current: {current_val:.3f} -> Target: {self.target}"
         )
 
-        while abs((current := self.get_current()) - self.target) > self.deadzone:
+        while (
+            abs((current := self.get_current()) - self.target) > self.deadzone
+            and self.auto_event.is_set()
+        ):
             output = self.pid(current)
             logger.debug(
                 f"[{self.__class__.__name__}] Tracking loop | Current: {current:.3f}, Error: {abs(current - self.target):.3f}, PID Output: {output:.3f}"

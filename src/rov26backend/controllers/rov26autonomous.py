@@ -75,14 +75,20 @@ class Rov26Autonomous:
 
         self.maintainers = [
             VerticalMaintainer(
-                self.target_y, vision_state, control_state, **vertical_kwargs
+                self.target_y,
+                vision_state,
+                control_state,
+                auto_event,
+                **vertical_kwargs,
             ),
             LateralMaintainer(
-                self.target_x, vision_state, control_state, **lateral_kwargs
+                self.target_x, vision_state, control_state, auto_event, **lateral_kwargs
             ),
-            YawMaintainer(self.target_yaw, vision_state, control_state, **yaw_kwargs),
+            YawMaintainer(
+                self.target_yaw, vision_state, control_state, auto_event, **yaw_kwargs
+            ),
             ForwardMaintainer(
-                self.target_z, vision_state, control_state, **forward_kwargs
+                self.target_z, vision_state, control_state, auto_event, **forward_kwargs
             ),
         ]
         logger.info("Rov26Autonomous worker tracking instance ready.")
@@ -151,4 +157,11 @@ class Rov26Autonomous:
                 logger.info(
                     "Autonomous mission routing complete. Returning control context to baseline system."
                 )
+                with self.control_state as control:
+                    control.forward = 1500
+                    control.lateral = 1500
+                    control.vertical = 1500
+                    control.yaw = 1500
+                    control.servo = 1700
+
             time.sleep(0.01)

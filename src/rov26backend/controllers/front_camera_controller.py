@@ -6,12 +6,17 @@ from pyzbar.pyzbar import decode
 from rov26backend.controllers.base_camera_controller import BaseCamera
 from rov26backend.controllers.solvePnP import solvePnP
 from rov26backend.models.vision_state import VisionState
+from rov26backend.controllers.qrcode_as_apriltag import QRPolygonFinder
+import logging
+
+logger = logging.getLogger("ROV.cam")
 
 
 class FrontCamera(BaseCamera):
     def __init__(
         self,
         vision_state: VisionState,
+        auto_event: threading.Event,
         camera_id="046d_C270_HD_WEBCAM_55E22480"
         # camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD"
         if sys.platform == "linux"
@@ -22,7 +27,9 @@ class FrontCamera(BaseCamera):
             stream_url="rtsp://localhost:8554/live/frontcam",
         )
         self.vision_state = vision_state
+        self.auto_event = auto_event
         self.pnp_solver = solvePnP(vision_state)
+        self.qr_polygon_finder = QRPolygonFinder()
 
         # Threading state
         self.latest_frame = None
@@ -53,49 +60,62 @@ class FrontCamera(BaseCamera):
                 time.sleep(0.02)
 
     def process_and_publish(self, frame):
-        decoded_objects = decode(frame)
+        raw_polygon = self.qr_polygon_finder.get_polygon_from_frame(frame)
 
-        if not decoded_objects:
-            with self.vision_state as vision_state:
-                vision_state.qr_side = "NOT_FOUND"
+        qr_text = "NOT_FOUND"
+
+        if not self.auto_event.is_set():
+            decoded_objects = decode(frame)
+            if decoded_objects:
+                for obj in decoded_objects:
+                    data = obj.data.decode("utf-8")
+                    if data in ["A", "B", "C", "D"]:
+                        qr_text = data
+                        break
+
+        with self.vision_state as vision_state:
+            vision_state.qr_side = qr_text
+
+            if raw_polygon is not None:
+                points = [(float(pt[0]), float(pt[1])) for pt in raw_polygon]
+                vision_state.qr_polygon = points
+            else:
                 vision_state.qr_polygon = []
+
+        if raw_polygon is None:
             self.pnp_solver.process([])
             return
 
-        for obj in decoded_objects:
-            data = obj.data.decode("utf-8")
-            points = [(pt.x, pt.y) for pt in obj.polygon]
+        cv2.polylines(frame, [raw_polygon], True, (255, 0, 0), 3)
 
-            side_status = data if data in ["A", "B", "C", "D"] else "NOT_FOUND"
-            with self.vision_state as vision_state:
-                vision_state.qr_side = side_status
-                vision_state.qr_polygon = points
+        success, rvec, tvec = self.pnp_solver.process(points)
 
-            # Hitung SolvePnP dan update tvec/rvec ke VisionState
-            success, rvec, tvec = self.pnp_solver.process(points)
+        if success:
+            cv2.drawFrameAxes(
+                frame,
+                self.pnp_solver.camera_matrix,
+                self.pnp_solver.dist_coeffs,
+                rvec,
+                tvec,
+                length=3.0,
+                thickness=3,
+            )
 
-            if success:
-                cv2.drawFrameAxes(
-                    frame,
-                    self.pnp_solver.camera_matrix,
-                    self.pnp_solver.dist_coeffs,
-                    rvec,
-                    tvec,
-                    length=3.0,
-                    thickness=3,
-                )
+            tx, ty, tz = tvec.flatten()
+            xyz_text = f"X:{tx:.1f} Y:{ty:.1f} Z:{tz:.1f}cm Data:{qr_text}"
 
-                tx, ty, tz = tvec.flatten()
-                xyz_text = f"X:{tx:.1f} Y:{ty:.1f} Z:{tz:.1f}cm"
-                cv2.putText(
-                    frame,
-                    xyz_text,
-                    (points[0][0], max(points[0][1] - 15, 20)),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (0, 255, 0),
-                    2,
-                )
+            text_x = int(raw_polygon[0][0])
+            text_y = max(int(raw_polygon[0][1]) - 15, 20)
+
+            cv2.putText(
+                frame,
+                xyz_text,
+                (text_x, text_y),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                2,
+            )
 
     def stop(self):
         self.is_running = False
