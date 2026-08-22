@@ -222,69 +222,49 @@ def parse_arguments():
     # Autonomous PID Configs
     # ==========================================
     # Forward
-    parser.add_argument(
-        "--forward-kp", type=float, default=argparse.SUPPRESS, help="Forward PID Kp"
-    )
-    parser.add_argument(
-        "--forward-ki", type=float, default=argparse.SUPPRESS, help="Forward PID Ki"
-    )
-    parser.add_argument(
-        "--forward-kd", type=float, default=argparse.SUPPRESS, help="Forward PID Kd"
-    )
+    parser.add_argument("--forward-kp", type=float, default=0.0, help="Forward PID Kp")
+    parser.add_argument("--forward-ki", type=float, default=0.0, help="Forward PID Ki")
+    parser.add_argument("--forward-kd", type=float, default=0.0, help="Forward PID Kd")
     parser.add_argument(
         "--forward-deadzone",
         type=float,
-        default=argparse.SUPPRESS,
+        default=0.5,
         help="Forward Deadzone",
     )
 
     # Lateral
-    parser.add_argument(
-        "--lateral-kp", type=float, default=argparse.SUPPRESS, help="Lateral PID Kp"
-    )
-    parser.add_argument(
-        "--lateral-ki", type=float, default=argparse.SUPPRESS, help="Lateral PID Ki"
-    )
-    parser.add_argument(
-        "--lateral-kd", type=float, default=argparse.SUPPRESS, help="Lateral PID Kd"
-    )
+    parser.add_argument("--lateral-kp", type=float, default=0.0, help="Lateral PID Kp")
+    parser.add_argument("--lateral-ki", type=float, default=0.0, help="Lateral PID Ki")
+    parser.add_argument("--lateral-kd", type=float, default=0.0, help="Lateral PID Kd")
     parser.add_argument(
         "--lateral-deadzone",
         type=float,
-        default=argparse.SUPPRESS,
+        default=0.5,
         help="Lateral Deadzone",
     )
 
     # Vertical
     parser.add_argument(
-        "--vertical-kp", type=float, default=argparse.SUPPRESS, help="Vertical PID Kp"
+        "--vertical-kp", type=float, default=0.0, help="Vertical PID Kp"
     )
     parser.add_argument(
-        "--vertical-ki", type=float, default=argparse.SUPPRESS, help="Vertical PID Ki"
+        "--vertical-ki", type=float, default=0.0, help="Vertical PID Ki"
     )
     parser.add_argument(
-        "--vertical-kd", type=float, default=argparse.SUPPRESS, help="Vertical PID Kd"
+        "--vertical-kd", type=float, default=0.5, help="Vertical PID Kd"
     )
     parser.add_argument(
         "--vertical-deadzone",
         type=float,
-        default=argparse.SUPPRESS,
+        default=0.5,
         help="Vertical Deadzone",
     )
 
     # Yaw
-    parser.add_argument(
-        "--yaw-kp", type=float, default=argparse.SUPPRESS, help="Yaw PID Kp"
-    )
-    parser.add_argument(
-        "--yaw-ki", type=float, default=argparse.SUPPRESS, help="Yaw PID Ki"
-    )
-    parser.add_argument(
-        "--yaw-kd", type=float, default=argparse.SUPPRESS, help="Yaw PID Kd"
-    )
-    parser.add_argument(
-        "--yaw-deadzone", type=float, default=argparse.SUPPRESS, help="Yaw Deadzone"
-    )
+    parser.add_argument("--yaw-kp", type=float, default=0.0, help="Yaw PID Kp")
+    parser.add_argument("--yaw-ki", type=float, default=0.0, help="Yaw PID Ki")
+    parser.add_argument("--yaw-kd", type=float, default=0.0, help="Yaw PID Kd")
+    parser.add_argument("--yaw-deadzone", type=float, default=0.5, help="Yaw Deadzone")
 
     return parser.parse_args()
 

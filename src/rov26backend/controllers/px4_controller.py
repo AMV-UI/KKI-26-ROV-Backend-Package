@@ -291,8 +291,6 @@ class PixhawkController:
             ch6,
             ch7,
             ch8,
-            0,
-            0,
         )
         logger.debug(f"""
                      Sending RC:
