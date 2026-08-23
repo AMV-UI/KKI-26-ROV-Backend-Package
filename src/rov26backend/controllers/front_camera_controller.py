@@ -17,8 +17,8 @@ class FrontCamera(BaseCamera):
         self,
         vision_state: VisionState,
         auto_event: threading.Event,
-        camera_id="046d_C270_HD_WEBCAM_55E22480"
-        # camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD"
+        # camera_id="046d_C270_HD_WEBCAM_55E22480"
+        camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD"
         if sys.platform == "linux"
         else "7&2C094952&0&0000",
     ):
@@ -30,6 +30,9 @@ class FrontCamera(BaseCamera):
         self.auto_event = auto_event
         self.pnp_solver = solvePnP(vision_state)
         self.qr_polygon_finder = QRPolygonFinder()
+
+        self.qr_text = "NOT_FOUND"
+        self.last_qr_read = time.time()
 
         # Threading state
         self.latest_frame = None
@@ -62,19 +65,20 @@ class FrontCamera(BaseCamera):
     def process_and_publish(self, frame):
         raw_polygon = self.qr_polygon_finder.get_polygon_from_frame(frame)
 
-        qr_text = "NOT_FOUND"
-
-        if not self.auto_event.is_set():
+        if not self.auto_event.is_set() and time.time() - self.last_qr_read > 0.5:
             decoded_objects = decode(frame)
             if decoded_objects:
                 for obj in decoded_objects:
                     data = obj.data.decode("utf-8")
                     if data in ["A", "B", "C", "D"]:
-                        qr_text = data
+                        self.qr_text = data
                         break
+            else:
+                self.qr_text = "NOT_FOUND"
+            self.last_qr_read = time.time()
 
         with self.vision_state as vision_state:
-            vision_state.qr_side = qr_text
+            vision_state.qr_side = self.qr_text
 
             if raw_polygon is not None:
                 points = [(float(pt[0]), float(pt[1])) for pt in raw_polygon]
@@ -102,7 +106,7 @@ class FrontCamera(BaseCamera):
             )
 
             tx, ty, tz = tvec.flatten()
-            xyz_text = f"X:{tx:.1f} Y:{ty:.1f} Z:{tz:.1f}cm Data:{qr_text}"
+            xyz_text = f"X:{tx:.1f} Y:{ty:.1f} Z:{tz:.1f}cm Data:{self.qr_text}"
 
             text_x = int(raw_polygon[0][0])
             text_y = max(int(raw_polygon[0][1]) - 15, 20)
