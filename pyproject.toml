@@ -18,7 +18,8 @@ dependencies = [
     "pyudev ~= 0.24; sys_platform == 'linux'",
     "imageio-ffmpeg ~= 0.4",
     "simple-pid ~= 2.0",
-    "xinput-python ~= 0.4; sys_platform == 'win32'"
+    "xinput-python ~= 0.4; sys_platform == 'win32'",
+    "pillow ~= 12.3.0"
 ]
 
 authors = [
@@ -36,6 +37,7 @@ license-files = ["LICEN[CS]E*"]
 
 [project.scripts]
 gawerov = "rov26backend.main_refact:main"
+tunerov = "rov26backend.live_pwm_tuner:main"
 gawerovold = "rov26backend.main:main"
 
 [project.urls]
