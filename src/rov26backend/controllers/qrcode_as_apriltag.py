@@ -1,5 +1,8 @@
 import cv2
 import numpy as np
+import logging
+
+logger = logging.getLogger("ROV.vision")
 
 
 class QRDebouncer:
@@ -94,7 +97,11 @@ class QRPolygonFinder:
                             # 1. RELAXED SKEW CHECK:
                             # We trust the hierarchy (parent->child->grandchild) more than geometry now.
                             # We just ensure it has 4 sides and a much looser aspect ratio to allow for 45-degree trapezoids.
-                            if len(approx) == 4:
+                            circularity = 4 * np.pi * (area / (peri * peri))
+                            logger.debug(f"""
+                                         Circularity: {circularity}
+                                         """)
+                            if len(approx) == 4 or abs(1.0 - circularity) < 0.2:
                                 x, y, w, h = cv2.boundingRect(approx)
                                 aspect_ratio = float(w) / h
                                 if 0.3 <= aspect_ratio <= 3.0:
