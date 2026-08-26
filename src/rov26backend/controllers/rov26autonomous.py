@@ -114,16 +114,14 @@ class Rov26Autonomous:
         )
         while self._is_running.is_set() and self.auto_event.is_set():
             latest_vision_state = self.vision_state.get_latest()
-            qr_status = latest_vision_state.qr_side
+            tvec = latest_vision_state.tvec
 
-            logger.debug(f"Descent Loop | Target status: {qr_status}")
+            logger.debug("Descent Loop")
 
             with self.control_state as control:
-                if qr_status != "NOT_FOUND":
+                if tvec[0] != 0 or tvec[1] != 0 or tvec[2] != 0:
                     control.vertical = 1500
-                    logger.info(
-                        f"Target locked! QR marker detected: {qr_status}. Halting descent."
-                    )
+                    logger.info("Target locked! QR marker detected")
                     break
                 else:
                     control.vertical = 1450

@@ -43,15 +43,23 @@ class DirectionMaintainer:
             f"[{self.__class__.__name__}] Starting track. Current: {current_val:.3f} -> Target: {self.target}"
         )
 
-        while (
-            abs((current := self.get_current()) - self.target) > self.deadzone
-            and self.auto_event.is_set()
-        ):
+        long_maintained = False
+        last_not_maintained = time.time()
+
+        while not long_maintained and self.auto_event.is_set():
+            current = self.get_current()
             output = self.pid(current)
             logger.debug(
                 f"[{self.__class__.__name__}] Tracking loop | Current: {current:.3f}, Error: {abs(current - self.target):.3f}, PID Output: {output:.3f}"
             )
             self.control_to(int(1500 + output))
+
+            maintained = abs(current - self.target) < self.deadzone
+            if not maintained:
+                last_not_maintained = time.time()
+
+            long_maintained = time.time() - last_not_maintained > 1.0
+
             time.sleep(0.01)
 
         logger.info(
@@ -73,12 +81,14 @@ class ForwardMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        kp=1,
+        kp=10,
         ki=0,
         kd=0,
         deadzone=0.5,
     ):
-        super().__init__(target, vision_state, control_state, kp, ki, kd, deadzone)
+        super().__init__(
+            target, vision_state, control_state, auto_event, kp, ki, kd, deadzone
+        )
 
     def control_to(self, value):
         with self.control_state as control:
@@ -95,12 +105,14 @@ class LateralMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        kp=1,
+        kp=10,
         ki=0,
         kd=0,
         deadzone=0.5,
     ):
-        super().__init__(target, vision_state, control_state, kp, ki, kd, deadzone)
+        super().__init__(
+            target, vision_state, control_state, auto_event, kp, ki, kd, deadzone
+        )
 
     def control_to(self, value):
         with self.control_state as control:
@@ -117,12 +129,14 @@ class VerticalMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        kp=1,
+        kp=10,
         ki=0,
         kd=0,
         deadzone=0.5,
     ):
-        super().__init__(target, vision_state, control_state, kp, ki, kd, deadzone)
+        super().__init__(
+            target, vision_state, control_state, auto_event, kp, ki, kd, deadzone
+        )
 
     def control_to(self, value):
         with self.control_state as control:
@@ -139,12 +153,14 @@ class YawMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        kp=1,
+        kp=10,
         ki=0,
         kd=0,
         deadzone=0.5,
     ):
-        super().__init__(target, vision_state, control_state, kp, ki, kd, deadzone)
+        super().__init__(
+            target, vision_state, control_state, auto_event, kp, ki, kd, deadzone
+        )
 
     def control_to(self, value):
         with self.control_state as control:

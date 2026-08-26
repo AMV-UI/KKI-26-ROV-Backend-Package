@@ -7,60 +7,64 @@ logger = logging.getLogger("ROV.vision")
 
 class QRDebouncer:
     def __init__(
-        self, required_streak=3, max_missing_frames=2, max_jump_pixels=50, alpha=0.3
+        self, required_streak=3, max_missing_frames=4, max_jump_pixels=75, alpha=0.3
     ):
         self.required_streak = required_streak
-        self.max_missing_frames = max_missing_frames
+        self.max_missing_frames = max_missing_frames  # We need this back!
         self.max_jump_pixels = max_jump_pixels
-        self.alpha = alpha  # NEW: EMA smoothing factor
+        self.alpha = alpha
 
         self.current_streak = 0
         self.missing_frames = 0
         self.is_confirmed = False
-        self.last_known_polygon = None
 
-    def update(self, detected_polygon):
-        if detected_polygon is not None and self.last_known_polygon is not None:
-            old_center = np.mean(self.last_known_polygon, axis=0)
+        self.tracking_polygon = None
+        self.persistent_polygon = None
+
+    def update(self, detected_polygon, frame_shape):
+        if detected_polygon is not None and self.tracking_polygon is not None:
+            old_center = np.mean(self.tracking_polygon, axis=0)
             new_center = np.mean(detected_polygon, axis=0)
             jump_distance = np.linalg.norm(new_center - old_center)
 
             if jump_distance > self.max_jump_pixels:
                 detected_polygon = None
             else:
-                # --- NEW: EMA SMOOTHING ---
-                # Interpolate between the old polygon and the new one
                 detected_polygon = (self.alpha * detected_polygon) + (
-                    (1 - self.alpha) * self.last_known_polygon
+                    (1 - self.alpha) * self.tracking_polygon
                 )
                 detected_polygon = np.int32(detected_polygon)
 
-        # --- STANDARD DEBOUNCING LOGIC ---
         if detected_polygon is not None:
             self.current_streak += 1
             self.missing_frames = 0
-            self.last_known_polygon = detected_polygon
+            self.tracking_polygon = detected_polygon
 
             if self.current_streak >= self.required_streak:
                 self.is_confirmed = True
+                self.persistent_polygon = detected_polygon
         else:
             self.missing_frames += 1
 
             if self.missing_frames > self.max_missing_frames:
                 self.current_streak = 0
                 self.is_confirmed = False
-                self.last_known_polygon = None
+                self.tracking_polygon = None
 
-        if self.is_confirmed:
-            return self.last_known_polygon
-        else:
-            return None
+        if self.persistent_polygon is not None:
+            clamped_polygon = np.copy(self.persistent_polygon)
+            max_y, max_x = frame_shape[0] - 1, frame_shape[1] - 1
+
+            clamped_polygon[:, 0] = np.clip(clamped_polygon[:, 0], 0, max_x)
+            clamped_polygon[:, 1] = np.clip(clamped_polygon[:, 1], 0, max_y)
+
+            return clamped_polygon
+
+        return None
 
 
 class QRPolygonFinder:
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         self.debouncer = QRDebouncer()
 
     def preprocess_frame(self, frame):
@@ -164,32 +168,39 @@ class QRPolygonFinder:
                     else:
                         tl, p1, p2 = pts[2], pts[0], pts[1]
 
-                    # Estimate the missing 4th center (Bottom-Right) using vector math
-                    br = p1 + p2 - tl
+                    # --- NEW: SKEW VALIDATION CHECKS ---
+                    # Create vectors for the two legs of the "L"
+                    vec1 = p1 - tl
+                    vec2 = p2 - tl
 
-                    # Combine into an array of 4 points
-                    four_points = np.array([tl, p1, br, p2], dtype=np.int32)
+                    len1 = np.linalg.norm(vec1)
+                    len2 = np.linalg.norm(vec2)
 
-                    # Sort the points clockwise based on their angles from the centroid
-                    center = np.mean(four_points, axis=0)
-                    angles = np.arctan2(
-                        four_points[:, 1] - center[1], four_points[:, 0] - center[0]
-                    )
-                    sorted_points = four_points[np.argsort(angles)]
+                    if len1 > 0 and len2 > 0:
+                        # 1. Leg Ratio (0.0 to 1.0). 1.0 means perfectly equal length.
+                        leg_ratio = min(len1, len2) / max(len1, len2)
 
-                    raw_box = sorted_points
+                        # 2. Angle Check using Dot Product. 0.0 means perfectly 90 degrees.
+                        cos_theta = np.dot(vec1, vec2) / (len1 * len2)
 
-        return self.debouncer.update(raw_box)
+                        # PARAMETERS TO TUNE:
+                        # leg_ratio > 0.4 ensures one side isn't > 2.5x longer than the other.
+                        # abs(cos_theta) < 0.8 ensures the corner angle stays roughly between 36° and 144°.
+                        if leg_ratio > 0.4 and abs(cos_theta) < 0.8:
+                            # Estimate the missing 4th center (Bottom-Right) using vector math
+                            br = p1 + p2 - tl
 
-        # if confirmed_box is not None:
-        #     cv2.polylines(frame, [confirmed_box], True, (255, 0, 0), 3)
-        #     cv2.putText(
-        #         frame,
-        #         "QR Polygon",
-        #         (confirmed_box[0][0], confirmed_box[0][1] - 10),
-        #         cv2.FONT_HERSHEY_SIMPLEX,
-        #         0.5,
-        #         (255, 0, 0),
-        #         2,
-        #     )
-        #     return frame
+                            # Combine into an array of 4 points
+                            four_points = np.array([tl, p1, br, p2], dtype=np.int32)
+
+                            # Sort the points clockwise based on their angles from the centroid
+                            center = np.mean(four_points, axis=0)
+                            angles = np.arctan2(
+                                four_points[:, 1] - center[1],
+                                four_points[:, 0] - center[0],
+                            )
+                            sorted_points = four_points[np.argsort(angles)]
+
+                            raw_box = sorted_points
+
+        return self.debouncer.update(raw_box, frame.shape)

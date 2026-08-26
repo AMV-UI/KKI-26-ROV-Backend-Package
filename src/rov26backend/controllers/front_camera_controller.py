@@ -65,7 +65,7 @@ class FrontCamera(BaseCamera):
     def process_and_publish(self, frame):
         raw_polygon = self.qr_polygon_finder.get_polygon_from_frame(frame)
 
-        if not self.auto_event.is_set() and time.time() - self.last_qr_read > 0.5:
+        if time.time() - self.last_qr_read > 0.5:
             decoded_objects = decode(frame)
             if decoded_objects:
                 for obj in decoded_objects:

@@ -18,8 +18,8 @@ class ROV26RcMixer:
         smoothing_factor=0.025,
         pwm_center=1500,
         pwm_range=500,
-        pwm_min=1300,
-        pwm_max=1700,
+        pwm_min=1100,
+        pwm_max=1900,
         servo_open=1700,
         servo_close=2280,
     ):
