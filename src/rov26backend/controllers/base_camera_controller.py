@@ -121,6 +121,7 @@ class BaseCamera:
 
     def stop(self):
         self._is_running.clear()
+        self.cleanup()
         if self._thread:
             self._thread.join()
 

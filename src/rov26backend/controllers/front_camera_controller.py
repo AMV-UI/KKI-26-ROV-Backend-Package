@@ -120,8 +120,3 @@ class FrontCamera(BaseCamera):
                 (0, 255, 0),
                 2,
             )
-
-    def stop(self):
-        self.is_running = False
-        if self.worker_thread.is_alive():
-            self.worker_thread.join()

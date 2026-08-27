@@ -105,7 +105,7 @@ class QRPolygonFinder:
                             logger.debug(f"""
                                          Circularity: {circularity}
                                          """)
-                            if len(approx) == 4 or abs(1.0 - circularity) < 0.2:
+                            if len(approx) == 4 or abs(1.0 - circularity) < 0.3:
                                 x, y, w, h = cv2.boundingRect(approx)
                                 aspect_ratio = float(w) / h
                                 if 0.3 <= aspect_ratio <= 3.0:
@@ -138,9 +138,33 @@ class QRPolygonFinder:
                         distinct_patterns.append(contour)
 
             # Use distinct_patterns instead of the raw list
-            if len(known_centers) >= 3:
-                # Take the first 3 centers and convert to numpy array
-                pts = np.array(known_centers[:3], dtype=np.float32)
+            if len(distinct_patterns) >= 3:
+                # --- NEW: FILTER FALSE POSITIVES BY AREA SIMILARITY ---
+                # Pair each center with its contour area
+                candidates = []
+                for i, cnt in enumerate(distinct_patterns):
+                    area = cv2.contourArea(cnt)
+                    candidates.append((known_centers[i][0], known_centers[i][1], area))
+
+                # Sort candidates by area, from smallest to largest
+                candidates.sort(key=lambda x: x[2])
+
+                # Slide a window of 3 across the list to find the triplet with the most similar areas
+                best_triplet = None
+                min_area_diff = float("inf")
+
+                for i in range(len(candidates) - 2):
+                    # Difference between the largest and smallest area in this triplet
+                    area_diff = candidates[i + 2][2] - candidates[i][2]
+
+                    if area_diff < min_area_diff:
+                        min_area_diff = area_diff
+                        best_triplet = candidates[i : i + 3]
+
+                # Extract just the X, Y coordinates of the best 3
+                pts = np.array(
+                    [(pt[0], pt[1]) for pt in best_triplet], dtype=np.float32
+                )
 
                 # --- NEW: COLLINEARITY / AREA CHECK ---
                 x1, y1 = pts[0]
@@ -153,7 +177,7 @@ class QRPolygonFinder:
                 )
 
                 # If the area is tiny, the points are in a straight line. Reject them.
-                # A 1000 pixel area is a very safe minimum for a readable QR code triangle.
+                # A 500 pixel area is a very safe minimum for a readable QR code triangle.
                 if triangle_area > 500:
                     # Find distances between all three points
                     dist_01 = np.linalg.norm(pts[0] - pts[1])
@@ -168,7 +192,7 @@ class QRPolygonFinder:
                     else:
                         tl, p1, p2 = pts[2], pts[0], pts[1]
 
-                    # --- NEW: SKEW VALIDATION CHECKS ---
+                    # --- SKEW VALIDATION CHECKS ---
                     # Create vectors for the two legs of the "L"
                     vec1 = p1 - tl
                     vec2 = p2 - tl
@@ -184,8 +208,6 @@ class QRPolygonFinder:
                         cos_theta = np.dot(vec1, vec2) / (len1 * len2)
 
                         # PARAMETERS TO TUNE:
-                        # leg_ratio > 0.4 ensures one side isn't > 2.5x longer than the other.
-                        # abs(cos_theta) < 0.8 ensures the corner angle stays roughly between 36° and 144°.
                         if leg_ratio > 0.4 and abs(cos_theta) < 0.8:
                             # Estimate the missing 4th center (Bottom-Right) using vector math
                             br = p1 + p2 - tl

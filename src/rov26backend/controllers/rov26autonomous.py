@@ -103,6 +103,7 @@ class Rov26Autonomous:
     def stop(self):
         logger.info("Signaling autonomous manager thread to stop...")
         self._is_running.clear()
+        self.auto_event.clear()
         if self._thread:
             self._thread.join()
             self._thread = None
