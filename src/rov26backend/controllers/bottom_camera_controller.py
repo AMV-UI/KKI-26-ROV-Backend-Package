@@ -10,12 +10,11 @@ class BottomCamera(BaseCamera):
 
     def __init__(
         self,
-        camera_id="Generic_HD_camera_20201212000000"
-        if sys.platform == "linux"
-        else "7&C0B9667&0&0000",
+        **kwargs,
     ):
+        default_cam_id = "Generic_HD_camera_20201212000000" if sys.platform == "linux" else "7&C0B9667&0&0000",
         super().__init__(
-            camera_id=camera_id,
+            camera_id=kwargs.get('bottom_camera_id') or default_cam_id,
             stream_url="rtsp://localhost:8554/live/bottomcam",
             fps=30,
         )

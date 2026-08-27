@@ -6,6 +6,7 @@ import serial.tools.list_ports
 import sys
 import threading
 import time
+import queue
 
 
 logger = logging.getLogger("ROV.px4")
@@ -17,12 +18,14 @@ class PixhawkController:
         control_state: ControlState,
         telemetry_state: TelemetryState,
         auto_event: threading.Event,
+        param_queue: queue.Queue,
     ):
         self.master = None
         self.pxmode = "MANUAL"
         self.mav = None
         self.rc_chans = None
         self._thread = None
+        self.param_queue = param_queue
         self._is_running = threading.Event()
         self.control_state = control_state
         self.telemetry_state = telemetry_state
@@ -76,6 +79,12 @@ class PixhawkController:
                     logger.info(f"Mode set to : {self.pxmode}")
                 with self.control_state as control:
                     control.target_mode = None
+
+            try:
+                param_id, param_value = self.param_queue.get_nowait()
+                self.send_param_update(param_id, param_value)
+            except queue.Empty:
+                pass
 
             self._pump_mavlink_messages()
             self.request_pixhawk_to_telemetry()
@@ -205,6 +214,21 @@ class PixhawkController:
         if block:
             self.master.motors_disarmed_wait()
             logger.info("Motor Disarmed!")
+
+    def send_param_update(self, param, value):
+        """Constructs and sends the MAVLink parameter setting message."""
+
+        try:
+            self.master.mav.param_set_send(
+                self.master.target_system,
+                self.master.target_component,
+                param.encode("utf-8"),
+                float(value),
+                mavutil.mavlink.MAV_PARAM_TYPE_INT16,
+            )
+
+        except Exception as e:
+            logger.error(f"Error sending param: {e}")
 
     def request_pixhawk_to_telemetry(self):
         try:

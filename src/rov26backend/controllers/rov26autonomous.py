@@ -20,12 +20,12 @@ class Rov26Autonomous:
         control_state: ControlState,
         vision_state: VisionState,
         auto_event: threading.Event,
-        args: argparse.Namespace,
+        **kwargs,
     ):
-        self.target_x = args.target_x
-        self.target_y = args.target_y
-        self.target_z = args.target_z
-        self.target_yaw = args.target_yaw
+        self.target_x = kwargs.get('target_x') or 0.0
+        self.target_y = kwargs.get('target_y') or 0.0
+        self.target_z = kwargs.get('target_z') or 0.0
+        self.target_yaw = kwargs.get('target_yaw') or 0.0
 
         self._thread = None
         self._is_running = threading.Event()
@@ -33,62 +33,37 @@ class Rov26Autonomous:
         self.control_state = control_state
         self.vision_state = vision_state
 
-        vertical_kwargs = {}
-        if hasattr(args, "vertical_kp"):
-            vertical_kwargs["kp"] = args.vertical_kp
-        if hasattr(args, "vertical_ki"):
-            vertical_kwargs["ki"] = args.vertical_ki
-        if hasattr(args, "vertical_kd"):
-            vertical_kwargs["kd"] = args.vertical_kd
-        if hasattr(args, "vertical_deadzone"):
-            vertical_kwargs["deadzone"] = args.vertical_deadzone
-
-        lateral_kwargs = {}
-        if hasattr(args, "lateral_kp"):
-            lateral_kwargs["kp"] = args.lateral_kp
-        if hasattr(args, "lateral_ki"):
-            lateral_kwargs["ki"] = args.lateral_ki
-        if hasattr(args, "lateral_kd"):
-            lateral_kwargs["kd"] = args.lateral_kd
-        if hasattr(args, "lateral_deadzone"):
-            lateral_kwargs["deadzone"] = args.lateral_deadzone
-
-        yaw_kwargs = {}
-        if hasattr(args, "yaw_kp"):
-            yaw_kwargs["kp"] = args.yaw_kp
-        if hasattr(args, "yaw_ki"):
-            yaw_kwargs["ki"] = args.yaw_ki
-        if hasattr(args, "yaw_kd"):
-            yaw_kwargs["kd"] = args.yaw_kd
-        if hasattr(args, "yaw_deadzone"):
-            yaw_kwargs["deadzone"] = args.yaw_deadzone
-
-        forward_kwargs = {}
-        if hasattr(args, "forward_kp"):
-            forward_kwargs["kp"] = args.forward_kp
-        if hasattr(args, "forward_ki"):
-            forward_kwargs["ki"] = args.forward_ki
-        if hasattr(args, "forward_kd"):
-            forward_kwargs["kd"] = args.forward_kd
-        if hasattr(args, "forward_deadzone"):
-            forward_kwargs["deadzone"] = args.forward_deadzone
-
         self.maintainers = [
             VerticalMaintainer(
                 self.target_y,
                 vision_state,
                 control_state,
                 auto_event,
-                **vertical_kwargs,
+                vertical_kp=kwargs.get("vertical_kp"),
+                vertical_ki=kwargs.get("vertical_ki"),
+                vertical_kd=kwargs.get("vertical_kd"),
+                deadzone=kwargs.get("vertical_deadzone"),
             ),
             LateralMaintainer(
-                self.target_x, vision_state, control_state, auto_event, **lateral_kwargs
+                self.target_x, vision_state, control_state, auto_event,
+                lateral_kp=kwargs.get("lateral_kp"),
+                lateral_ki=kwargs.get("lateral_ki"),
+                lateral_kd=kwargs.get("lateral_kd"),
+                deadzone=kwargs.get("lateral_deadzone"),
             ),
             YawMaintainer(
-                self.target_yaw, vision_state, control_state, auto_event, **yaw_kwargs
+                self.target_yaw, vision_state, control_state, auto_event,
+                yaw_kp=kwargs.get("yaw_kp"),
+                yaw_ki=kwargs.get("yaw_ki"),
+                yaw_kd=kwargs.get("yaw_kd"),
+                deadzone=kwargs.get("yaw_deadzone"),
             ),
             ForwardMaintainer(
-                self.target_z, vision_state, control_state, auto_event, **forward_kwargs
+                self.target_z, vision_state, control_state, auto_event,
+                forward_kp=kwargs.get("forward_kp"),
+                forward_ki=kwargs.get("forward_ki"),
+                forward_kd=kwargs.get("forward_kd"),
+                deadzone=kwargs.get("forward_deadzone"),
             ),
         ]
         logger.info("Rov26Autonomous worker tracking instance ready.")

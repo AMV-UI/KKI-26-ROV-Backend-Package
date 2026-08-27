@@ -1,19 +1,16 @@
 import os
 import sys
 import threading
+import queue
+import typer
 
-# 1. Force pure-Python Protobuf
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
 
-# 3. NOW load OpenCV/Vision modules
-
-# 4. THEN load gRPC/Protobuf
 import grpc
 from rov26backend.controllers.gcs_controller import RosGrpcServicer
 from rov26backend.generated.server_pb2_grpc import add_ServerServicer_to_server
 
-# 5. Load the rest of your hardware controllers
 from rov26backend.controllers.front_camera_controller import FrontCamera
 from rov26backend.controllers.bottom_camera_controller import BottomCamera
 from rov26backend.controllers.joystick_controller import PxnP5JoystickLinux
@@ -23,89 +20,146 @@ if sys.platform == "win32":
 
 from rov26backend.controllers.rc_mixer import ROV26RcMixer
 from rov26backend.controllers.px4_controller import PixhawkController
+from rov26backend.controllers.dummy_mikon import DummyPixhawk
 from rov26backend.controllers.rov26autonomous import Rov26Autonomous
-from rov26backend.config import args, log_listener
+from rov26backend.controllers.rov26tuner import LivePWMOverlayTuner
+from rov26backend.config import log_listener
 
 from rov26backend.models.input_state import InputState
 from rov26backend.models.control_state import ControlState
 from rov26backend.models.telemetry_state import TelemetryState
 from rov26backend.models.vision_state import VisionState
 
-# Standard libraries
+from typing import Annotated
 import time
 import concurrent.futures
 import logging
 
 logger = logging.getLogger("ROV.main")
 
+app = typer.Typer()
 
-def main():
+
+@app.command()
+def rov(
+    no: Annotated[list[str], typer.Option()] = [],
+    smoothing_factor: float = None,
+    servo_open: int = None,
+    servo_close: int = None,
+    pwm_center: int = None,
+    pwm_range: int = None,
+    pwm_min: int = None,
+    pwm_max: int = None,
+    dummy_mikon: bool = False,
+    tune_motor: bool = False,
+    front_cam_id: str = None,
+    bottom_cam_id: str = None,
+    grpc_port: int = 50051,
+    target_x: float = None,
+    target_y: float = None,
+    target_z: float = None,
+    vertical_kp: float = None,
+    vertical_ki: float = None,
+    vertical_kd: float = None,
+    vertical_deadzone: float = None,
+    forward_kp: float = None,
+    forward_ki: float = None,
+    forward_kd: float = None,
+    forward_deadzone: float = None,
+    lateral_kp: float = None,
+    lateral_ki: float = None,
+    lateral_kd: float = None,
+    lateral_deadzone: float = None,
+    yaw_kp: float = None,
+    yaw_ki: float = None,
+    yaw_kd: float = None,
+    yaw_deadzone: float = None,
+):
     auto_event = threading.Event()
 
     input_state = InputState()
     control_state = ControlState()
     telemetry_state = TelemetryState()
     vision_state = VisionState()
+    mikon_param_queue = queue.Queue(maxsize=10)
 
-    # Hardware controllers (initialized as None to manage shutdowns cleanly)
     joystick = None
     rc_mixer = None
     mikon = None
     front_camera = None
     bottom_camera = None
     server = None
+    tuner = None
 
-    # --- 1. Joystick Initialization ---
-    if not args.no_joystick:
+    if "joystick" not in no:
         if sys.platform == "linux":
             joystick = PxnP5JoystickLinux(input_state)
         else:
             joystick = PxnP5JoystickWindows(input_state)
         joystick.start()
 
-    # --- 2. RC Mixer Initialization ---
-    if not args.no_mixer:
-        mixer_kwargs = {
-            key.replace("mixer_", ""): value
-            for key, value in vars(args).items()
-            if key.startswith("mixer_")
-        }
-
-        rc_mixer = ROV26RcMixer(input_state, control_state, auto_event, **mixer_kwargs)
+    if "mixer" not in no:
+        rc_mixer = ROV26RcMixer(
+            input_state,
+            control_state,
+            auto_event,
+            smoothing_factor=smoothing_factor,
+            servo_open=servo_open,
+            servo_close=servo_close,
+            pwm_center=pwm_center,
+            pwm_max=pwm_max,
+            pwm_min=pwm_min,
+            pwm_range=pwm_range,
+        )
         rc_mixer.start()
 
-    autonomous = Rov26Autonomous(control_state, vision_state, auto_event, args)
-    autonomous.start()
+    if "auto" not in no:
+        autonomous = Rov26Autonomous(
+            control_state,
+            vision_state,
+            auto_event,
+            target_x=target_x,
+            target_y=target_y,
+            target_z=target_z,
+            vertical_kp=vertical_kp,
+            vertical_ki=vertical_ki,
+            vertical_kd=vertical_kd,
+            vertical_deadzone=vertical_deadzone,
+            forward_kp=forward_kp,
+            forward_ki=forward_ki,
+            forward_kd=forward_kd,
+            forward_deadzone=forward_deadzone,
+            lateral_kp=lateral_kp,
+            lateral_ki=lateral_ki,
+            lateral_kd=lateral_kd,
+            lateral_deadzone=lateral_deadzone,
+            yaw_kp=yaw_kp,
+            yaw_ki=yaw_ki,
+            yaw_kd=yaw_kd,
+            yaw_deadzone=yaw_deadzone,
+        )
+        autonomous.start()
 
-    # --- 3. Mikon / Pixhawk Initialization ---
-    if not args.no_mikon:
-        mikon = PixhawkController(control_state, telemetry_state, auto_event)
+    if "mikon" not in no:
+        if dummy_mikon:
+            mikon = DummyPixhawk(
+                control_state, telemetry_state, auto_event, mikon_param_queue
+            )
+        else:
+            mikon = PixhawkController(
+                control_state, telemetry_state, auto_event, mikon_param_queue
+            )
         mikon.start()
 
-    # --- 4. Front Camera Initialization ---
-    if not args.no_front_cam:
-        front_cam_kwargs = {
-            key.replace("front_cam_", "camera_"): value
-            for key, value in vars(args).items()
-            if key.startswith("front_cam_")
-        }
-        front_camera = FrontCamera(vision_state, auto_event, **front_cam_kwargs)
+    if "front_cam" not in no:
+        front_camera = FrontCamera(vision_state, auto_event, front_cam_id=front_cam_id)
         front_camera.start()
 
-    # --- 5. Bottom Camera Initialization ---
-    if not args.no_bottom_cam:
-        bottom_cam_kwargs = {
-            key.replace("bottom_cam_", "camera_"): value
-            for key, value in vars(args).items()
-            if key.startswith("bottom_cam_")
-        }
-        bottom_camera = BottomCamera(**bottom_cam_kwargs)
+    if "bottom_cam" not in no:
+        bottom_camera = BottomCamera(bottom_cam_id=bottom_cam_id)
         bottom_camera.start()
 
-    # --- 6. gRPC Server Initialization ---
-    if not args.no_grpc:
-        grpc_port = args.grpc_port if hasattr(args, "grpc_port") else 50051
-
+    if "grpc" not in no:
         server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
         add_ServerServicer_to_server(
             RosGrpcServicer(telemetry_state, vision_state), server
@@ -114,8 +168,11 @@ def main():
         server.start()
         logger.info(f"gRPC Server running on port {grpc_port}.")
 
+    if tune_motor:
+        tuner = LivePWMOverlayTuner(mikon_param_queue)
+        tuner.start()
+
     logger.info("Main script active. Press Ctrl+C to stop.")
-    auto_event.set()
 
     try:
         while True:
@@ -137,11 +194,9 @@ def main():
             mikon.stop()
         if autonomous:
             autonomous.stop()
+        if tuner:
+            tuner.stop()
 
         logger.info("Waiting for threads to exit...")
         logger.info("All threads stopped. Goodbye.")
         log_listener.stop()
-
-
-if __name__ == "__main__":
-    main()

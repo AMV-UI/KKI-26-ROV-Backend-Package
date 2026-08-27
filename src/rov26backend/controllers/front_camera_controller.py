@@ -17,15 +17,16 @@ class FrontCamera(BaseCamera):
         self,
         vision_state: VisionState,
         auto_event: threading.Event,
-        # camera_id="046d_C270_HD_WEBCAM_55E22480"
-        camera_id="CNFHH52R10643003DBB0_Integrated_Webcam_HD"
-        if sys.platform == "linux"
-        else "7&2C094952&0&0000",
+        **kwargs,
     ):
+        default_cam_id = "046d_C270_HD_WEBCAM_55E22480" if sys.platform == "linux" else "7&2C094952&0&0000"
         super().__init__(
-            camera_id=camera_id,
+            camera_id = kwargs.get('front_camera_id') or default_cam_id,
             stream_url="rtsp://localhost:8554/live/frontcam",
         )
+
+
+        
         self.vision_state = vision_state
         self.auto_event = auto_event
         self.pnp_solver = solvePnP(vision_state)

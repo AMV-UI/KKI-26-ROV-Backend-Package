@@ -19,7 +19,9 @@ dependencies = [
     "imageio-ffmpeg ~= 0.4",
     "simple-pid ~= 2.0",
     "xinput-python ~= 0.4; sys_platform == 'win32'",
-    "pillow ~= 12.3.0"
+    "pillow ~= 12.3",
+    "typer ~= 0.27",
+    "typer-cli ~= 0.24"
 ]
 
 authors = [
@@ -36,8 +38,7 @@ license = "MIT"
 license-files = ["LICEN[CS]E*"]
 
 [project.scripts]
-gawerov = "rov26backend.main_rov26:main"
-tunerov = "rov26backend.live_pwm_tuner:main"
+gawerov = "rov26backend.main_rov26:app"
 
 [project.urls]
 Homepage = "https://github.com/AMV-UI/KKI-26-ROV-Backend-Package"

@@ -15,18 +15,12 @@ class ROV26RcMixer:
         input_state: InputState,
         control_state: ControlState,
         auto_event: threading.Event,
-        smoothing_factor=0.025,
-        pwm_center=1500,
-        pwm_range=500,
-        pwm_min=1100,
-        pwm_max=1900,
-        servo_open=1700,
-        servo_close=2280,
+        **kwargs,
     ):
-        self.smoothing_factor = smoothing_factor
-        self.servo_open = servo_open
-        self.servo_close = servo_close
-        self.servo_target = 1700
+        self.smoothing_factor = kwargs.get("smoothing_factor") or 0.025
+        self.servo_open = kwargs.get("servo_open") or 1700
+        self.servo_close = kwargs.get("servo_close") or 2280
+        self.servo_target = self.servo_open
 
         self.auto_event = auto_event
 
@@ -46,10 +40,10 @@ class ROV26RcMixer:
         self.target_vertical = 1500
         self.target_yaw = 1500
 
-        self.pwm_center = pwm_center
-        self.pwm_range = pwm_range
-        self.pwm_min = pwm_min
-        self.pwm_max = pwm_max
+        self.pwm_center = kwargs.get("pwm_center") or 1500
+        self.pwm_range = kwargs.get("pwm_range") or 400
+        self.pwm_min = kwargs.get("pwm_min") or 1100
+        self.pwm_max = kwargs.get("pwm_max") or 1900
 
         self.target_mode = None
         self.arm_toggle = False
