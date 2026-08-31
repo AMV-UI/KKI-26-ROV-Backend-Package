@@ -9,17 +9,28 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ================= CONFIGURATION =================
 IMAGE_PATH = os.path.join(SCRIPT_DIR, "vectored-frame.png")
-SAVE_FILE = "pwm_settings.json"  # JSON config file name
+SAVE_FILE = "pwm_settings.json"
 
-# Coordinates for the input fields on your specific image (x, y)
 MOTOR_COORDS = {
-    1: ("right", 70),  # Top Right
-    2: ("left", 70),  # Top Left
-    5: ("right", 210),  # Mid Right (Upper)
-    6: ("left", 210),  # Mid Left  (Upper)
-    3: ("right", 370),  # Bottom Right
-    4: ("left", 370),  # Bottom Left
+    1: ("right", 100),  # Top Right
+    2: ("left", 100),  # Top Left
+    5: ("right", 380),  # Mid Right
+    6: ("left", 380),  # Mid Left
+    3: ("right", 660),  # Bottom Right
+    4: ("left", 660),  # Bottom Left
 }
+
+# Parameter mapping: (Name, Scale_Min, Scale_Max, Resolution, Type)
+PARAMS_CONFIG = [
+    ("MIN", 1000, 1500, 1, int),
+    ("MAX", 1500, 2000, 1, int),
+    ("THROTTLE", -1.0, 1.0, 0.01, float),
+    ("YAW", -1.0, 1.0, 0.01, float),
+    ("FORWARD", -1.0, 1.0, 0.01, float),
+    ("LATERAL", -1.0, 1.0, 0.01, float),
+    ("ROLL", -1.0, 1.0, 0.01, float),
+    ("PITCH", -1.0, 1.0, 0.01, float),
+]
 # =================================================
 
 
@@ -40,9 +51,8 @@ class LivePWMOverlayTuner:
             self._thread.start()
 
     def _run_ui(self):
-        """Creates the UI and runs the mainloop within the SAME thread."""
         self.root = tk.Tk()
-        self.root.title("Live ArduSub PWM Overlay Tuner")
+        self.root.title("Live ArduSub Motor Matrix Tuner")
         self._build_connection_frame()
         self._build_canvas_frame()
         self.root.mainloop()
@@ -54,22 +64,26 @@ class LivePWMOverlayTuner:
         if self._thread:
             self._thread.join()
 
-    # Configuration Save/Load Methods
     def _load_config(self):
-        """Reads the JSON file if it exists, otherwise loads defaults."""
+        defaults = {
+            m: {p[0]: (1500 if p[4] == int else 0.0) for p in PARAMS_CONFIG}
+            for m in MOTOR_COORDS.keys()
+        }
+
         if os.path.exists(SAVE_FILE):
             try:
                 with open(SAVE_FILE, "r") as f:
                     data = json.load(f)
-                    # JSON keys are always strings, so we cast the motor IDs back to integers
-                    return {int(k): v for k, v in data.items()}
+                    for k, v in data.items():
+                        motor_id = int(k)
+                        if motor_id in defaults:
+                            defaults[motor_id].update(v)
             except Exception as e:
                 print(f"Warning: Failed to load {SAVE_FILE}: {e}")
 
-        return {m: {"MIN": 1100, "MAX": 1900} for m in MOTOR_COORDS.keys()}
+        return defaults
 
     def _save_config(self):
-        """Saves the current state to the JSON file."""
         try:
             with open(SAVE_FILE, "w") as f:
                 json.dump(self.pwm_data, f, indent=4)
@@ -77,10 +91,8 @@ class LivePWMOverlayTuner:
             print(f"Error: Failed to save to {SAVE_FILE}: {e}")
 
     def _build_connection_frame(self):
-        """Builds the top bar for port selection and MAVLink connection."""
         frame = tk.Frame(self.root, pady=10, padx=10)
         frame.pack(side=tk.TOP, fill=tk.X)
-
         self.send_all_btn = tk.Button(
             frame,
             text="Send All to FC",
@@ -91,7 +103,6 @@ class LivePWMOverlayTuner:
         self.send_all_btn.pack(side=tk.LEFT, padx=10)
 
     def _build_canvas_frame(self):
-        """Builds the background image canvas and populates the motor controls."""
         canvas_frame = tk.Frame(self.root)
         canvas_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
@@ -100,177 +111,114 @@ class LivePWMOverlayTuner:
             self.bg_photo = ImageTk.PhotoImage(self.bg_image)
             img_width, img_height = self.bg_image.size
         except FileNotFoundError:
-            img_width, img_height = 400, 500
+            img_width, img_height = 400, 700
             self.bg_photo = tk.PhotoImage(width=img_width, height=img_height)
-            print(f"Warning: {IMAGE_PATH} not found. Using blank background.")
 
         side_panel_width = 250
         canvas_width = img_width + (side_panel_width * 2)
-        canvas_height = img_height
+        canvas_height = max(img_height, 900)
 
         self.canvas = tk.Canvas(canvas_frame, width=canvas_width, height=canvas_height)
         self.canvas.pack()
-
-        # Place the image offset by the side panel width so it sits in the middle
         self.canvas.create_image(side_panel_width, 0, image=self.bg_photo, anchor=tk.NW)
 
         for motor_id, (side, y) in MOTOR_COORDS.items():
-            if side == "left":
-                x = 10
-                anchor = tk.W
-            else:
-                x = canvas_width - 10
-                anchor = tk.E
-
+            x = 10 if side == "left" else canvas_width - 10
+            anchor = tk.W if side == "left" else tk.E
             self._build_motor_overlay(motor_id, x, y, anchor)
 
     def _build_motor_overlay(self, motor_id, x, y, anchor):
-        """Constructs a small control panel for a motor and places it on the canvas."""
         box = tk.Frame(self.canvas, bg="white", padx=4, pady=4, bd=1, relief=tk.SOLID)
-
-        # Ensure dictionary keys exist for this motor
         if motor_id not in self.entry_widgets:
             self.entry_widgets[motor_id] = {}
 
-        # Retrieve saved settings for this specific motor
-        saved_min = self.pwm_data[motor_id]["MIN"]
-        saved_max = self.pwm_data[motor_id]["MAX"]
-
-        # Motor Title
         tk.Label(
             box, text=f"Motor {motor_id}", font=("Arial", 9, "bold"), bg="white"
         ).grid(row=0, column=0, columnspan=3)
 
-        # --- MINIMUM CONTROLS ---
-        tk.Label(box, text="Min:", font=("Arial", 8), bg="white").grid(
-            row=1, column=0, sticky="e"
-        )
-        min_entry = tk.Entry(box, width=5, justify="center")
-        min_entry.insert(0, str(saved_min))
-        min_entry.grid(row=1, column=1, padx=2)
+        row_idx = 1
+        for param_name, min_v, max_v, res, type_cast in PARAMS_CONFIG:
+            saved_val = self.pwm_data[motor_id][param_name]
 
-        # Store entry reference for flashing
-        self.entry_widgets[motor_id]["MIN"] = min_entry
+            tk.Label(
+                box, text=f"{param_name.capitalize()}:", font=("Arial", 8), bg="white"
+            ).grid(row=row_idx, column=0, sticky="e")
 
-        min_scale = tk.Scale(
-            box,
-            from_=1000,
-            to=1500,
-            orient=tk.HORIZONTAL,
-            showvalue=False,
-            length=120,
-            bg="white",
-        )
-        min_scale.set(saved_min)
-        min_scale.grid(row=1, column=2)
+            entry = tk.Entry(box, width=6, justify="center")
+            entry.insert(0, str(saved_val))
+            entry.grid(row=row_idx, column=1, padx=2)
+            self.entry_widgets[motor_id][param_name] = entry
 
-        # --- MAXIMUM CONTROLS ---
-        tk.Label(box, text="Max:", font=("Arial", 8), bg="white").grid(
-            row=2, column=0, sticky="e"
-        )
-        max_entry = tk.Entry(box, width=5, justify="center")
-        max_entry.insert(0, str(saved_max))
-        max_entry.grid(row=2, column=1, padx=2)
+            scale = tk.Scale(
+                box,
+                from_=min_v,
+                to=max_v,
+                resolution=res,
+                orient=tk.HORIZONTAL,
+                showvalue=False,
+                length=120,
+                bg="white",
+            )
+            scale.set(saved_val)
+            scale.grid(row=row_idx, column=2)
 
-        # Store entry reference for flashing
-        self.entry_widgets[motor_id]["MAX"] = max_entry
+            # Closures to bind correct variables to callbacks
+            def make_slider_cb(e_ref, m_id, p_name, caster):
+                def cb(val):
+                    if self.root.focus_get() != e_ref:
+                        e_ref.delete(0, tk.END)
+                        e_ref.insert(0, val)
+                    self.on_value_change(m_id, p_name, val, caster)
 
-        max_scale = tk.Scale(
-            box,
-            from_=1500,
-            to=2000,
-            orient=tk.HORIZONTAL,
-            showvalue=False,
-            length=120,
-            bg="white",
-        )
-        max_scale.set(saved_max)
-        max_scale.grid(row=2, column=2)
+                return cb
+
+            def make_entry_cb(s_ref, e_ref, m_id, p_name, caster):
+                def cb(event):
+                    try:
+                        val = caster(e_ref.get())
+                        s_ref.set(val)
+                    except ValueError:
+                        e_ref.delete(0, tk.END)
+                        e_ref.insert(0, str(s_ref.get()))
+
+                return cb
+
+            scale.config(command=make_slider_cb(entry, motor_id, param_name, type_cast))
+            enter_cb = make_entry_cb(scale, entry, motor_id, param_name, type_cast)
+
+            entry.bind("<Return>", enter_cb)
+            entry.bind("<FocusOut>", enter_cb)
+
+            row_idx += 1
 
         self.canvas.create_window(x, y, window=box, anchor=anchor)
 
-        def on_slider_move(val, entry, m=motor_id, t="MIN"):
-            if self.root.focus_get() != entry:
-                entry.delete(0, tk.END)
-                entry.insert(0, val)
-            self.on_value_change(m, t, val)
-
-        def on_entry_commit(event, scale, entry, m=motor_id, t="MIN"):
-            try:
-                val = int(entry.get())
-                scale.set(val)
-            except ValueError:
-                entry.delete(0, tk.END)
-                entry.insert(0, str(scale.get()))
-
-        # Bind Sliders
-        min_scale.config(
-            command=lambda val, e=min_entry: on_slider_move(val, e, motor_id, "MIN")
-        )
-        max_scale.config(
-            command=lambda val, e=max_entry: on_slider_move(val, e, motor_id, "MAX")
-        )
-
-        # Bind Entries (Enter key and click-away)
-        min_entry.bind(
-            "<Return>",
-            lambda event, s=min_scale, e=min_entry: on_entry_commit(
-                event, s, e, motor_id, "MIN"
-            ),
-        )
-        max_entry.bind(
-            "<Return>",
-            lambda event, s=max_scale, e=max_entry: on_entry_commit(
-                event, s, e, motor_id, "MAX"
-            ),
-        )
-        min_entry.bind(
-            "<FocusOut>",
-            lambda event, s=min_scale, e=min_entry: on_entry_commit(
-                event, s, e, motor_id, "MIN"
-            ),
-        )
-        max_entry.bind(
-            "<FocusOut>",
-            lambda event, s=max_scale, e=max_entry: on_entry_commit(
-                event, s, e, motor_id, "MAX"
-            ),
-        )
-
-    def on_value_change(self, motor_id, limit_type, value):
-        """Updates internal state, auto-saves to JSON, and rate-limits serial updates."""
-        val = int(value)
-
-        if self.pwm_data[motor_id][limit_type] != val:
-            self.pwm_data[motor_id][limit_type] = val
+    def on_value_change(self, motor_id, param_name, value, type_cast):
+        val = type_cast(value)
+        if self.pwm_data[motor_id][param_name] != val:
+            self.pwm_data[motor_id][param_name] = val
             self._save_config()
 
-        timer_key = f"{motor_id}_{limit_type}"
-
+        timer_key = f"{motor_id}_{param_name}"
         if timer_key in self.update_timers:
             self.root.after_cancel(self.update_timers[timer_key])
 
         self.update_timers[timer_key] = self.root.after(
-            150, self.send_param_update, motor_id, limit_type, val
+            150, self.send_param_update, motor_id, param_name, val
         )
 
     def send_all_params(self):
-        """Iterates through all saved data and sends it to the flight controller."""
         for motor_id, limits in self.pwm_data.items():
-            for limit_type, val in limits.items():
-                self.send_param_update(motor_id, limit_type, val)
+            for param_name, val in limits.items():
+                self.send_param_update(motor_id, param_name, val)
 
-    def send_param_update(self, motor_id, limit_type, value):
-        """Constructs and sends the MAVLink parameter setting message."""
-        param_id = f"MOT_{motor_id}_{limit_type}"
-
+    def send_param_update(self, motor_id, param_name, value):
+        param_id = f"MOT_{motor_id}_{param_name}"
         self.param_queue.put((param_id, value))
+        self._flash_entry(motor_id, param_name)
 
-        self._flash_entry(motor_id, limit_type)
-
-    def _flash_entry(self, motor_id, limit_type):
-        """Temporarily changes the background color of an entry to signify an update."""
-        entry = self.entry_widgets.get(motor_id, {}).get(limit_type)
+    def _flash_entry(self, motor_id, param_name):
+        entry = self.entry_widgets.get(motor_id, {}).get(param_name)
         if entry:
             original_bg = entry.cget("background")
             entry.config(bg="lightgreen")

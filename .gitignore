@@ -7,4 +7,3 @@ __pycache__/
 *.parm
 *.tlog
 *.tlog.raw
-pwm_settings.json
