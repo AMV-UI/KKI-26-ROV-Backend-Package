@@ -20,7 +20,7 @@ MOTOR_COORDS = {
     4: ("left", 660),  # Bottom Left
 }
 
-# Parameter mapping: (Name, Scale_Min, Scale_Max, Resolution, Type)
+# Per-motor parameters
 PARAMS_CONFIG = [
     ("MIN", 1000, 1500, 1, int),
     ("MAX", 1500, 2000, 1, int),
@@ -30,6 +30,14 @@ PARAMS_CONFIG = [
     ("LATERAL", -1.0, 1.0, 0.01, float),
     ("ROLL", -1.0, 1.0, 0.01, float),
     ("PITCH", -1.0, 1.0, 0.01, float),
+]
+
+# Global PID parameters
+GLOBAL_PARAMS_CONFIG = [
+    ("ATC_RAT_YAW_P", 0.0, 1.0, 0.01, float),
+    ("ATC_RAT_YAW_I", 0.0, 0.1, 0.001, float),
+    ("ATC_RAT_YAW_D", 0.0, 0.05, 0.001, float),
+    ("ATC_ANG_YAW_P", 0.0, 10.0, 0.1, float),
 ]
 # =================================================
 
@@ -52,7 +60,7 @@ class LivePWMOverlayTuner:
 
     def _run_ui(self):
         self.root = tk.Tk()
-        self.root.title("Live ArduSub Motor Matrix Tuner")
+        self.root.title("Live ArduSub Motor & PID Tuner")
         self._build_connection_frame()
         self._build_canvas_frame()
         self.root.mainloop()
@@ -70,14 +78,23 @@ class LivePWMOverlayTuner:
             for m in MOTOR_COORDS.keys()
         }
 
+        # Add Global parameter defaults
+        defaults["GLOBAL"] = {p[0]: 0.0 for p in GLOBAL_PARAMS_CONFIG}
+
         if os.path.exists(SAVE_FILE):
             try:
                 with open(SAVE_FILE, "r") as f:
                     data = json.load(f)
                     for k, v in data.items():
-                        motor_id = int(k)
-                        if motor_id in defaults:
-                            defaults[motor_id].update(v)
+                        if k == "GLOBAL":
+                            defaults["GLOBAL"].update(v)
+                        else:
+                            try:
+                                motor_id = int(k)
+                                if motor_id in defaults:
+                                    defaults[motor_id].update(v)
+                            except ValueError:
+                                pass  # Ignore invalid keys
             except Exception as e:
                 print(f"Warning: Failed to load {SAVE_FILE}: {e}")
 
@@ -122,32 +139,40 @@ class LivePWMOverlayTuner:
         self.canvas.pack()
         self.canvas.create_image(side_panel_width, 0, image=self.bg_photo, anchor=tk.NW)
 
+        # Build Global PID Overlay at top center
+        self._build_param_overlay(
+            "GLOBAL", canvas_width // 2, 20, tk.N, GLOBAL_PARAMS_CONFIG, "PID Tuning"
+        )
+
+        # Build Motor Overlays
         for motor_id, (side, y) in MOTOR_COORDS.items():
             x = 10 if side == "left" else canvas_width - 10
             anchor = tk.W if side == "left" else tk.E
-            self._build_motor_overlay(motor_id, x, y, anchor)
+            self._build_param_overlay(
+                motor_id, x, y, anchor, PARAMS_CONFIG, f"Motor {motor_id}"
+            )
 
-    def _build_motor_overlay(self, motor_id, x, y, anchor):
+    def _build_param_overlay(self, group_id, x, y, anchor, config_list, title):
         box = tk.Frame(self.canvas, bg="white", padx=4, pady=4, bd=1, relief=tk.SOLID)
-        if motor_id not in self.entry_widgets:
-            self.entry_widgets[motor_id] = {}
+        if group_id not in self.entry_widgets:
+            self.entry_widgets[group_id] = {}
 
-        tk.Label(
-            box, text=f"Motor {motor_id}", font=("Arial", 9, "bold"), bg="white"
-        ).grid(row=0, column=0, columnspan=3)
+        tk.Label(box, text=title, font=("Arial", 9, "bold"), bg="white").grid(
+            row=0, column=0, columnspan=3
+        )
 
         row_idx = 1
-        for param_name, min_v, max_v, res, type_cast in PARAMS_CONFIG:
-            saved_val = self.pwm_data[motor_id][param_name]
+        for param_name, min_v, max_v, res, type_cast in config_list:
+            saved_val = self.pwm_data[group_id][param_name]
 
-            tk.Label(
-                box, text=f"{param_name.capitalize()}:", font=("Arial", 8), bg="white"
-            ).grid(row=row_idx, column=0, sticky="e")
+            tk.Label(box, text=f"{param_name}:", font=("Arial", 8), bg="white").grid(
+                row=row_idx, column=0, sticky="e"
+            )
 
-            entry = tk.Entry(box, width=6, justify="center")
+            entry = tk.Entry(box, width=8, justify="center")
             entry.insert(0, str(saved_val))
             entry.grid(row=row_idx, column=1, padx=2)
-            self.entry_widgets[motor_id][param_name] = entry
+            self.entry_widgets[group_id][param_name] = entry
 
             scale = tk.Scale(
                 box,
@@ -162,17 +187,16 @@ class LivePWMOverlayTuner:
             scale.set(saved_val)
             scale.grid(row=row_idx, column=2)
 
-            # Closures to bind correct variables to callbacks
-            def make_slider_cb(e_ref, m_id, p_name, caster):
+            def make_slider_cb(e_ref, g_id, p_name, caster):
                 def cb(val):
                     if self.root.focus_get() != e_ref:
                         e_ref.delete(0, tk.END)
                         e_ref.insert(0, val)
-                    self.on_value_change(m_id, p_name, val, caster)
+                    self.on_value_change(g_id, p_name, val, caster)
 
                 return cb
 
-            def make_entry_cb(s_ref, e_ref, m_id, p_name, caster):
+            def make_entry_cb(s_ref, e_ref, g_id, p_name, caster):
                 def cb(event):
                     try:
                         val = caster(e_ref.get())
@@ -183,8 +207,8 @@ class LivePWMOverlayTuner:
 
                 return cb
 
-            scale.config(command=make_slider_cb(entry, motor_id, param_name, type_cast))
-            enter_cb = make_entry_cb(scale, entry, motor_id, param_name, type_cast)
+            scale.config(command=make_slider_cb(entry, group_id, param_name, type_cast))
+            enter_cb = make_entry_cb(scale, entry, group_id, param_name, type_cast)
 
             entry.bind("<Return>", enter_cb)
             entry.bind("<FocusOut>", enter_cb)
@@ -193,32 +217,39 @@ class LivePWMOverlayTuner:
 
         self.canvas.create_window(x, y, window=box, anchor=anchor)
 
-    def on_value_change(self, motor_id, param_name, value, type_cast):
+    def on_value_change(self, group_id, param_name, value, type_cast):
         val = type_cast(value)
-        if self.pwm_data[motor_id][param_name] != val:
-            self.pwm_data[motor_id][param_name] = val
+        if self.pwm_data[group_id][param_name] != val:
+            self.pwm_data[group_id][param_name] = val
             self._save_config()
 
-        timer_key = f"{motor_id}_{param_name}"
+        timer_key = f"{group_id}_{param_name}"
         if timer_key in self.update_timers:
             self.root.after_cancel(self.update_timers[timer_key])
 
         self.update_timers[timer_key] = self.root.after(
-            150, self.send_param_update, motor_id, param_name, val
+            150, self.send_param_update, group_id, param_name, val
         )
 
     def send_all_params(self):
-        for motor_id, limits in self.pwm_data.items():
+        # FIX: Force focus out of any active Entry box so its value commits to self.pwm_data
+        self.root.focus_set()
+
+        for group_id, limits in self.pwm_data.items():
             for param_name, val in limits.items():
-                self.send_param_update(motor_id, param_name, val)
+                self.send_param_update(group_id, param_name, val)
 
-    def send_param_update(self, motor_id, param_name, value):
-        param_id = f"MOT_{motor_id}_{param_name}"
+    def send_param_update(self, group_id, param_name, value):
+        if group_id == "GLOBAL":
+            param_id = param_name  # Send ATC_RAT_YAW_P directly
+        else:
+            param_id = f"MOT_{group_id}_{param_name}"
+
         self.param_queue.put((param_id, value))
-        self._flash_entry(motor_id, param_name)
+        self._flash_entry(group_id, param_name)
 
-    def _flash_entry(self, motor_id, param_name):
-        entry = self.entry_widgets.get(motor_id, {}).get(param_name)
+    def _flash_entry(self, group_id, param_name):
+        entry = self.entry_widgets.get(group_id, {}).get(param_name)
         if entry:
             original_bg = entry.cget("background")
             entry.config(bg="lightgreen")

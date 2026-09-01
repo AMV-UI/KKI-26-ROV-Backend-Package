@@ -13,30 +13,30 @@
         "MIN": 1130,
         "MAX": 1880,
         "THROTTLE": 0.0,
-        "YAW": -1.0,
-        "FORWARD": -1.0,
-        "LATERAL": -1.0,
+        "YAW": 1.0,
+        "FORWARD": 1.0,
+        "LATERAL": 1.0,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
     "5": {
         "MIN": 1102,
         "MAX": 1715,
-        "THROTTLE": -1.0,
+        "THROTTLE": 0.1,
         "YAW": 0.0,
         "FORWARD": 0.0,
         "LATERAL": 0.0,
-        "ROLL": 0.0,
+        "ROLL": -1.0,
         "PITCH": 0.0
     },
     "6": {
         "MIN": 1418,
         "MAX": 1700,
-        "THROTTLE": -0.12,
+        "THROTTLE": -1.0,
         "YAW": 0.0,
         "FORWARD": 0.0,
         "LATERAL": 0.0,
-        "ROLL": 0.0,
+        "ROLL": 0.1,
         "PITCH": 0.0
     },
     "3": {
@@ -45,7 +45,7 @@
         "THROTTLE": 0.0,
         "YAW": -1.0,
         "FORWARD": 1.0,
-        "LATERAL": 0.42,
+        "LATERAL": 1.0,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
@@ -55,8 +55,14 @@
         "THROTTLE": 0.0,
         "YAW": 1.0,
         "FORWARD": 1.0,
-        "LATERAL": -0.49,
+        "LATERAL": -1.0,
         "ROLL": 0.0,
         "PITCH": 0.0
+    },
+    "GLOBAL": {
+        "ATC_RAT_YAW_P": 1.0,
+        "ATC_RAT_YAW_I": 0.018,
+        "ATC_RAT_YAW_D": 0.0,
+        "ATC_ANG_YAW_P": 6.0
     }
 }

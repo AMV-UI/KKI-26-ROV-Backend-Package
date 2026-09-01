@@ -81,7 +81,7 @@ def rov(
     control_state = ControlState()
     telemetry_state = TelemetryState()
     vision_state = VisionState()
-    mikon_param_queue = queue.Queue(maxsize=10)
+    mikon_param_queue = queue.Queue(maxsize=60)
 
     joystick = None
     rc_mixer = None
