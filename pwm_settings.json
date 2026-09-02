@@ -1,28 +1,28 @@
 {
     "1": {
-        "MIN": 1404,
-        "MAX": 1617,
+        "MIN": 1380,
+        "MAX": 1670,
         "THROTTLE": 0.0,
         "YAW": 1.0,
-        "FORWARD": -1.0,
-        "LATERAL": 0.87,
+        "FORWARD": -0.95,
+        "LATERAL": 0.85,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
     "2": {
-        "MIN": 1130,
-        "MAX": 1880,
+        "MIN": 1253,
+        "MAX": 1630,
         "THROTTLE": 0.0,
         "YAW": 1.0,
-        "FORWARD": 1.0,
+        "FORWARD": 0.95,
         "LATERAL": 1.0,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
     "5": {
-        "MIN": 1102,
-        "MAX": 1715,
-        "THROTTLE": 0.1,
+        "MIN": 1300,
+        "MAX": 1700,
+        "THROTTLE": 1.0,
         "YAW": 0.0,
         "FORWARD": 0.0,
         "LATERAL": 0.0,
@@ -30,37 +30,37 @@
         "PITCH": 0.0
     },
     "6": {
-        "MIN": 1418,
+        "MIN": 1323,
         "MAX": 1700,
         "THROTTLE": -1.0,
         "YAW": 0.0,
         "FORWARD": 0.0,
         "LATERAL": 0.0,
-        "ROLL": 0.1,
+        "ROLL": -1.0,
         "PITCH": 0.0
     },
     "3": {
-        "MIN": 1230,
-        "MAX": 1619,
+        "MIN": 1300,
+        "MAX": 1665,
         "THROTTLE": 0.0,
         "YAW": -1.0,
-        "FORWARD": 1.0,
-        "LATERAL": 1.0,
+        "FORWARD": 0.93,
+        "LATERAL": 0.81,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
     "4": {
-        "MIN": 1350,
-        "MAX": 1605,
+        "MIN": 1240,
+        "MAX": 1645,
         "THROTTLE": 0.0,
         "YAW": 1.0,
-        "FORWARD": 1.0,
+        "FORWARD": 0.82,
         "LATERAL": -1.0,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
     "GLOBAL": {
-        "ATC_RAT_YAW_P": 1.0,
+        "ATC_RAT_YAW_P": 12.0,
         "ATC_RAT_YAW_I": 0.018,
         "ATC_RAT_YAW_D": 0.0,
         "ATC_ANG_YAW_P": 6.0
