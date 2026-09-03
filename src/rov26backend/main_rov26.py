@@ -1,39 +1,42 @@
 import os
+import queue
 import sys
 import threading
-import queue
+
 import typer
 
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 os.environ["OPENCV_LOG_LEVEL"] = "ERROR"
+os.environ["YOLO_VERBOSE"] = "False"
 
 import grpc
-from rov26backend.controllers.gcs_controller import RosGrpcServicer
-from rov26backend.generated.server_pb2_grpc import add_ServerServicer_to_server
 
-from rov26backend.controllers.front_camera_controller import FrontCamera
 from rov26backend.controllers.bottom_camera_controller import BottomCamera
+from rov26backend.controllers.front_camera_controller import FrontCamera
+from rov26backend.controllers.gcs_controller import RosGrpcServicer
 from rov26backend.controllers.joystick_controller import PxnP5JoystickLinux
+from rov26backend.generated.server_pb2_grpc import add_ServerServicer_to_server
 
 if sys.platform == "win32":
     from rov26backend.controllers.joystick_windows import PxnP5JoystickWindows
 
-from rov26backend.controllers.rc_mixer import ROV26RcMixer
-from rov26backend.controllers.px4_controller import PixhawkController
-from rov26backend.controllers.dummy_mikon import DummyPixhawk
-from rov26backend.controllers.rov26autonomous import Rov26Autonomous
-from rov26backend.controllers.rov26tuner import LivePWMOverlayTuner
-from rov26backend.config import log_listener
-
-from rov26backend.models.input_state import InputState
-from rov26backend.models.control_state import ControlState
-from rov26backend.models.telemetry_state import TelemetryState
-from rov26backend.models.vision_state import VisionState
-
-from typing import Annotated
-import time
 import concurrent.futures
 import logging
+import time
+from typing import Annotated
+
+from rov26backend.config import log_listener
+from rov26backend.controllers.dummy_mikon import DummyPixhawk
+from rov26backend.controllers.px4_controller import PixhawkController
+from rov26backend.controllers.qrde_poly import QRPolygonFinder
+from rov26backend.controllers.rc_mixer import ROV26RcMixer
+from rov26backend.controllers.rov26autonomous import Rov26Autonomous
+from rov26backend.controllers.rov26tuner import LivePWMOverlayTuner
+from rov26backend.models.control_state import ControlState
+from rov26backend.models.input_state import InputState
+from rov26backend.models.polygon_state import PolygonState
+from rov26backend.models.telemetry_state import TelemetryState
+from rov26backend.models.vision_state import VisionState
 
 logger = logging.getLogger("ROV.main")
 
@@ -82,6 +85,24 @@ def rov(
     telemetry_state = TelemetryState()
     vision_state = VisionState()
     mikon_param_queue = queue.Queue(maxsize=60)
+    frame_queue = queue.Queue(maxsize=1)
+
+    polygon_state = PolygonState()
+    frame_queue = queue.Queue(maxsize=1)
+
+    qr_finder = QRPolygonFinder(frame_queue, polygon_state)
+    qr_finder.start()
+
+    if "front_cam" not in no:
+        # Pass the shared queues/states to FrontCamera
+        front_camera = FrontCamera(
+            vision_state,
+            auto_event,
+            frame_queue=frame_queue,
+            polygon_state=polygon_state,
+            front_cam_id=front_cam_id,
+        )
+        front_camera.start()
 
     joystick = None
     rc_mixer = None
@@ -151,10 +172,6 @@ def rov(
             )
         mikon.start()
 
-    if "front_cam" not in no:
-        front_camera = FrontCamera(vision_state, auto_event, front_cam_id=front_cam_id)
-        front_camera.start()
-
     if "bottom_cam" not in no:
         bottom_camera = BottomCamera(bottom_cam_id=bottom_cam_id)
         bottom_camera.start()
@@ -196,6 +213,8 @@ def rov(
             autonomous.stop()
         if tuner:
             tuner.stop()
+        if qr_finder:
+            qr_finder.stop()
 
         logger.info("Waiting for threads to exit...")
         logger.info("All threads stopped. Goodbye.")

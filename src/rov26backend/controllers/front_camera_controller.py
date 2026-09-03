@@ -1,13 +1,16 @@
+import logging
+import queue
 import sys
 import threading
 import time
+
 import cv2
+import numpy as np
 from pyzbar.pyzbar import decode
+
 from rov26backend.controllers.base_camera_controller import BaseCamera
 from rov26backend.controllers.solvePnP import solvePnP
 from rov26backend.models.vision_state import VisionState
-from rov26backend.controllers.qrcode_as_apriltag import QRPolygonFinder
-import logging
 
 logger = logging.getLogger("ROV.cam")
 
@@ -17,20 +20,27 @@ class FrontCamera(BaseCamera):
         self,
         vision_state: VisionState,
         auto_event: threading.Event,
+        frame_queue,
+        polygon_state,
         **kwargs,
     ):
-        default_cam_id = "046d_C270_HD_WEBCAM_55E22480" if sys.platform == "linux" else "7&2C094952&0&0000"
+        default_cam_id = (
+            "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
+            # "046d_C270_HD_WEBCAM_55E22480"
+            if sys.platform == "linux"
+            else "7&2C094952&0&0000"
+        )
         super().__init__(
-            camera_id = kwargs.get('front_camera_id') or default_cam_id,
+            camera_id=kwargs.get("front_camera_id") or default_cam_id,
             stream_url="rtsp://localhost:8554/live/frontcam",
         )
 
-
-        
         self.vision_state = vision_state
         self.auto_event = auto_event
+        self.frame_queue = frame_queue
+        self.polygon_state = polygon_state
         self.pnp_solver = solvePnP(vision_state)
-        self.qr_polygon_finder = QRPolygonFinder()
+        # self.qr_polygon_finder = QRPolygonFinder()
 
         self.qr_text = "NOT_FOUND"
         self.last_qr_read = time.time()
@@ -64,7 +74,14 @@ class FrontCamera(BaseCamera):
                 time.sleep(0.02)
 
     def process_and_publish(self, frame):
-        raw_polygon = self.qr_polygon_finder.get_polygon_from_frame(frame)
+        try:
+            self.frame_queue.put_nowait(frame)
+        except queue.Full:
+            pass
+
+        # 2. Retrieve the latest polygon state
+        current_poly_state = self.polygon_state.get_latest()
+        raw_polygon = current_poly_state.qr_polygon
 
         if time.time() - self.last_qr_read > 0.5:
             decoded_objects = decode(frame)
@@ -81,17 +98,25 @@ class FrontCamera(BaseCamera):
         with self.vision_state as vision_state:
             vision_state.qr_side = self.qr_text
 
-            if raw_polygon is not None:
-                points = [(float(pt[0]), float(pt[1])) for pt in raw_polygon]
+            # Safely handle both None and []
+            if raw_polygon:
+                actual_poly = raw_polygon[0]  # Extract the (4, 2) array
+                points = [(float(pt[0]), float(pt[1])) for pt in actual_poly]
                 vision_state.qr_polygon = points
             else:
                 vision_state.qr_polygon = []
 
-        if raw_polygon is None:
+        if not raw_polygon:
             self.pnp_solver.process([])
             return
 
-        cv2.polylines(frame, [raw_polygon], True, (255, 0, 0), 3)
+        actual_poly = raw_polygon[0]
+
+        # 1. Cast the array to int32 for OpenCV drawing functions
+        actual_poly_int = np.int32(actual_poly)
+
+        # 2. Draw using the integer array wrapped in a list
+        cv2.polylines(frame, [actual_poly_int], True, (255, 0, 0), 3)
 
         success, rvec, tvec = self.pnp_solver.process(points)
 
@@ -109,8 +134,9 @@ class FrontCamera(BaseCamera):
             tx, ty, tz = tvec.flatten()
             xyz_text = f"X:{tx:.1f} Y:{ty:.1f} Z:{tz:.1f}cm Data:{self.qr_text}"
 
-            text_x = int(raw_polygon[0][0])
-            text_y = max(int(raw_polygon[0][1]) - 15, 20)
+            # Safely extract scalars using the inner array (int conversion is handled)
+            text_x = int(actual_poly[0][0])
+            text_y = max(int(actual_poly[0][1]) - 15, 20)
 
             cv2.putText(
                 frame,

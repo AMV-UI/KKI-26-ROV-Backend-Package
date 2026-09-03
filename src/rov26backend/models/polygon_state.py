@@ -5,11 +5,7 @@ from typing import Any
 
 
 @dataclass
-class VisionState:
-    qr_side: str = "NOT_FOUND"
-    tvec = [0, 0, 0]
-    rvec = [0, 0, 0]
-    euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
+class PolygonState:
     qr_polygon = None
 
     def __post_init__(self):
@@ -25,7 +21,7 @@ class VisionState:
                 if hasattr(self, key) and key != "_lock":
                     setattr(self, key, value)
 
-    def get_latest(self) -> "VisionState":
+    def get_latest(self) -> "PolygonState":
         """Returns a thread-safe snapshot of the current state as an object."""
         with self._lock:
             # We copy so the receiver doesn't accidentally modify the live state

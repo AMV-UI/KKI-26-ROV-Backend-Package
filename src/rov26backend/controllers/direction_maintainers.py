@@ -1,8 +1,10 @@
-from simple_pid import PID
-from rov26backend.models.vision_state import VisionState
-from rov26backend.models.control_state import ControlState
 import logging
 import time
+
+from simple_pid import PID
+
+from rov26backend.models.control_state import ControlState
+from rov26backend.models.vision_state import VisionState
 
 logger = logging.getLogger("ROV.auto")
 
@@ -81,14 +83,17 @@ class ForwardMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
-            target, vision_state, control_state, auto_event,
-            kwargs.get('forward_kp') or 10.0,
-            kwargs.get('forward_ki') or 0.0,
-            kwargs.get('forward_kd') or 0.0,
-            kwargs.get('forward_deadzone') or 0.5,
+            target,
+            vision_state,
+            control_state,
+            auto_event,
+            kwargs.get("forward_kp") or 10.0,
+            kwargs.get("forward_ki") or 0.0,
+            kwargs.get("forward_kd") or 0.0,
+            kwargs.get("forward_deadzone") or 0.5,
         )
 
     def control_to(self, value):
@@ -106,14 +111,17 @@ class LateralMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
-            target, vision_state, control_state, auto_event,
-            kwargs.get('lateral_kp') or 10.0,
-            kwargs.get('lateral_ki') or 0.0,
-            kwargs.get('lateral_kd') or 0.0,
-            kwargs.get('lateral_deadzone') or 0.5,
+            target,
+            vision_state,
+            control_state,
+            auto_event,
+            kwargs.get("lateral_kp") or 10.0,
+            kwargs.get("lateral_ki") or 0.0,
+            kwargs.get("lateral_kd") or 0.0,
+            kwargs.get("lateral_deadzone") or 0.5,
         )
 
     def control_to(self, value):
@@ -131,14 +139,17 @@ class VerticalMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
-            target, vision_state, control_state, auto_event,
-            kwargs.get('vertical_kp') or 10.0,
-            kwargs.get('vertical_ki') or 0.0,
-            kwargs.get('vertical_kd') or 0.0,
-            kwargs.get('vertical_deadzone') or 0.5,
+            target,
+            vision_state,
+            control_state,
+            auto_event,
+            kwargs.get("vertical_kp") or 10.0,
+            kwargs.get("vertical_ki") or 0.0,
+            kwargs.get("vertical_kd") or 0.0,
+            kwargs.get("vertical_deadzone") or 0.5,
         )
 
     def control_to(self, value):
@@ -156,14 +167,17 @@ class YawMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
-            target, vision_state, control_state, auto_event,
-            kwargs.get('yaw_kp') or 10.0,
-            kwargs.get('yaw_ki') or 0.0,
-            kwargs.get('yaw_kd') or 0.0,
-            kwargs.get('yaw_deadzone') or 0.5,
+            target,
+            vision_state,
+            control_state,
+            auto_event,
+            kwargs.get("yaw_kp") or 10.0,
+            kwargs.get("yaw_ki") or 0.0,
+            kwargs.get("yaw_kd") or 0.0,
+            kwargs.get("yaw_deadzone") or 0.5,
         )
 
     def control_to(self, value):

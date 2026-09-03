@@ -1,10 +1,11 @@
-from rov26backend.models.button import PressButton
-from rov26backend.models.simul_press_button import SimulPressButton
-from rov26backend.models.input_state import InputState
-from rov26backend.models.control_state import ControlState
-import time
-import threading
 import logging
+import threading
+import time
+
+from rov26backend.models.button import PressButton
+from rov26backend.models.control_state import ControlState
+from rov26backend.models.input_state import InputState
+from rov26backend.models.simul_press_button import SimulPressButton
 
 logger = logging.getLogger("ROV.mixer")
 
@@ -17,9 +18,9 @@ class ROV26RcMixer:
         auto_event: threading.Event,
         **kwargs,
     ):
-        self.smoothing_factor = kwargs.get("smoothing_factor") or 0.025
-        self.servo_open = kwargs.get("servo_open") or 1700
-        self.servo_close = kwargs.get("servo_close") or 2280
+        self.smoothing_factor = kwargs.get("smoothing_factor") or 0.012
+        self.servo_open = kwargs.get("servo_open") or 1880
+        self.servo_close = kwargs.get("servo_close") or 2380
         self.servo_target = self.servo_open
 
         self.auto_event = auto_event
@@ -28,7 +29,7 @@ class ROV26RcMixer:
 
         self.MAX_SLEW_PER_SEC = 400
 
-        self.servo_pwm = 1700
+        self.servo_pwm = self.servo_open
 
         self.current_forward = 1500
         self.current_lateral = 1500
@@ -100,10 +101,11 @@ class ROV26RcMixer:
 
     def _update_servo_inputs(self, inputs: InputState):
         if inputs.dpad_vert == -1:
-            self.servo_target = 1700
+            self.servo_target = self.servo_open
         elif inputs.dpad_vert == 1:
-            self.servo_target = 2280
+            self.servo_target = self.servo_close
         self.servo_pwm += self.smoothing_factor * (self.servo_target - self.servo_pwm)
+
         with self.control_state as control:
             control.servo = int(self.servo_pwm)
 
