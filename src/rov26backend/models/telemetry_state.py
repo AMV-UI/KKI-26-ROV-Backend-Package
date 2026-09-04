@@ -1,9 +1,9 @@
+import copy
+import logging
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
-import copy
-import logging
 
 logger = logging.getLogger("ROV.gRPC")
 
@@ -75,6 +75,7 @@ class TelemetryState:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         logger.debug(f"""
+                     depth: {self.depth}
                      Mot 1 Effort: {self.mot1_eff}
                      Mot 2 Effort: {self.mot2_eff}
                      Mot 3 Effort: {self.mot3_eff}

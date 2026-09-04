@@ -1,9 +1,11 @@
-from rov26backend.models.input_state import InputState
-from inputs import get_gamepad
 import logging
 import threading
 import time
+
 import inputs
+from inputs import get_gamepad
+
+from rov26backend.models.input_state import InputState
 
 # --- FIX FOR LINUX 'inputs' LIBRARY BUG ---
 # This overwrites the broken LED scanning function with a dummy function that does nothing.
@@ -72,6 +74,6 @@ class PxnP5JoystickLinux:
                             input_state.btn_up = event.state
 
             except Exception as e:
-                logger.warn(f"Error reading gamepad: {e}")
+                logger.warning(f"Error reading gamepad: {e}")
                 time.sleep(1.0)
                 inputs.devices = inputs.DeviceManager()

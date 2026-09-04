@@ -18,9 +18,9 @@ class ROV26RcMixer:
         auto_event: threading.Event,
         **kwargs,
     ):
-        self.smoothing_factor = kwargs.get("smoothing_factor") or 0.012
+        self.smoothing_factor = kwargs.get("smoothing_factor") or 0.025
         self.servo_open = kwargs.get("servo_open") or 1880
-        self.servo_close = kwargs.get("servo_close") or 2380
+        self.servo_close = kwargs.get("servo_close") or 2420
         self.servo_target = self.servo_open
 
         self.auto_event = auto_event
@@ -75,22 +75,23 @@ class ROV26RcMixer:
     def stream_rc(self):
         while self._is_running.is_set():
             self.update_control_from_inputs()
-            time.sleep(0.01)
+            time.sleep(0.02)
 
     def update_control_from_inputs(self):
         inputs = self.input_state.get_latest()
-        self._update_motor_inputs(inputs)
-        self._update_mode_inputs(inputs)
-        self._update_servo_inputs(inputs)
+        if not self.auto_event.is_set():
+            self._update_motor_inputs(inputs)
+            self._update_mode_inputs(inputs)
+            self._update_servo_inputs(inputs)
 
-        logger.debug(f"""
-                      Sending Control:
-                      forward: {self.current_forward}
-                      lateral: {self.current_lateral}
-                      vertical: {self.current_vertical}
-                      yaw: {self.current_yaw}
-                      servo: {self.servo_pwm}
-                      """)
+        # logger.debug(f"""
+        #               Sending Control:
+        #               forward: {self.current_forward}
+        #               lateral: {self.current_lateral}
+        #               vertical: {self.current_vertical}
+        #               yaw: {self.current_yaw}
+        #               servo: {self.servo_pwm}
+        #               """)
 
         if not self.auto_event.is_set():
             with self.control_state as control:

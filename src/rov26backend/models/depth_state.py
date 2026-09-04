@@ -1,21 +1,12 @@
 import copy
-import logging
 import threading
 from dataclasses import dataclass
 from typing import Any
 
-logger = logging.getLogger("ROV.mixer")
-
 
 @dataclass
-class ControlState:
-    forward: int = 1500
-    lateral: int = 1500
-    vertical: int = 1500
-    yaw: int = 1500
-    servo: int = 1700
-    target_mode: str = None
-    arm_toggle: bool = False
+class DepthState:
+    depth = 0.0
 
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.
@@ -30,7 +21,7 @@ class ControlState:
                 if hasattr(self, key) and key != "_lock":
                     setattr(self, key, value)
 
-    def get_latest(self) -> "ControlState":
+    def get_latest(self) -> "DepthState":
         """Returns a thread-safe snapshot of the current state as an object."""
         with self._lock:
             # We copy so the receiver doesn't accidentally modify the live state
@@ -45,12 +36,4 @@ class ControlState:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        logger.debug(f"""
-                      Sending Control:
-                      forward: {self.forward}
-                      lateral: {self.lateral}
-                      vertical: {self.vertical}
-                      yaw: {self.yaw}
-                      servo: {self.servo}
-                      """)
         self._lock.release()

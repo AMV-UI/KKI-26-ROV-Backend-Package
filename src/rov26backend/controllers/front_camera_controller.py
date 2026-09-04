@@ -25,8 +25,8 @@ class FrontCamera(BaseCamera):
         **kwargs,
     ):
         default_cam_id = (
-            "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
-            # "046d_C270_HD_WEBCAM_55E22480"
+            # "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
+            "046d_C270_HD_WEBCAM_55E22480"
             if sys.platform == "linux"
             else "7&2C094952&0&0000"
         )

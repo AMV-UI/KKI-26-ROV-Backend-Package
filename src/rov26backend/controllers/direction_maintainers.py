@@ -21,7 +21,7 @@ class DirectionMaintainer:
         kd=0,
         deadzone=0.5,
     ):
-        self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-100, 100))
+        self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-50, 50))
         self.auto_event = auto_event
         self.target = target
         self.control_state = control_state
@@ -90,7 +90,7 @@ class ForwardMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("forward_kp") or 10.0,
+            kwargs.get("forward_kp") or -2.0,
             kwargs.get("forward_ki") or 0.0,
             kwargs.get("forward_kd") or 0.0,
             kwargs.get("forward_deadzone") or 0.5,
@@ -118,10 +118,10 @@ class LateralMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("lateral_kp") or 10.0,
+            kwargs.get("lateral_kp") or -10.0,
             kwargs.get("lateral_ki") or 0.0,
             kwargs.get("lateral_kd") or 0.0,
-            kwargs.get("lateral_deadzone") or 0.5,
+            kwargs.get("lateral_deadzone") or 1.0,
         )
 
     def control_to(self, value):
@@ -138,9 +138,11 @@ class VerticalMaintainer(DirectionMaintainer):
         target,
         vision_state: VisionState,
         control_state: ControlState,
+        depth_state,
         auto_event,
         **kwargs,
     ):
+        self.depth_state = depth_state
         super().__init__(
             target,
             vision_state,
@@ -157,7 +159,7 @@ class VerticalMaintainer(DirectionMaintainer):
             control.vertical = int(value)
 
     def get_current(self):
-        return self.vision_state.get_latest().tvec[1]
+        return self.depth_state.get_latest().depth
 
 
 class YawMaintainer(DirectionMaintainer):

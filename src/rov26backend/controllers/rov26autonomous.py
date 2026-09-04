@@ -1,15 +1,15 @@
+import logging
 import threading
-import argparse
-from rov26backend.models.vision_state import VisionState
-from rov26backend.models.control_state import ControlState
+import time
+
 from rov26backend.controllers.direction_maintainers import (
     ForwardMaintainer,
     LateralMaintainer,
     VerticalMaintainer,
-    YawMaintainer,
 )
-import logging
-import time
+from rov26backend.models.control_state import ControlState
+from rov26backend.models.depth_state import DepthState
+from rov26backend.models.vision_state import VisionState
 
 logger = logging.getLogger("ROV.auto")
 
@@ -19,13 +19,14 @@ class Rov26Autonomous:
         self,
         control_state: ControlState,
         vision_state: VisionState,
+        depth_state: DepthState,
         auto_event: threading.Event,
         **kwargs,
     ):
-        self.target_x = kwargs.get('target_x') or 0.0
-        self.target_y = kwargs.get('target_y') or 0.0
-        self.target_z = kwargs.get('target_z') or 0.0
-        self.target_yaw = kwargs.get('target_yaw') or 0.0
+        self.target_x = kwargs.get("target_x") or 0.7
+        self.target_y = kwargs.get("target_y") or 0.0
+        self.target_z = kwargs.get("target_z") or 24.0
+        self.target_yaw = kwargs.get("target_yaw") or 0.0
 
         self._thread = None
         self._is_running = threading.Event()
@@ -38,6 +39,7 @@ class Rov26Autonomous:
                 self.target_y,
                 vision_state,
                 control_state,
+                depth_state,
                 auto_event,
                 vertical_kp=kwargs.get("vertical_kp"),
                 vertical_ki=kwargs.get("vertical_ki"),
@@ -45,21 +47,30 @@ class Rov26Autonomous:
                 deadzone=kwargs.get("vertical_deadzone"),
             ),
             LateralMaintainer(
-                self.target_x, vision_state, control_state, auto_event,
+                self.target_x,
+                vision_state,
+                control_state,
+                auto_event,
                 lateral_kp=kwargs.get("lateral_kp"),
                 lateral_ki=kwargs.get("lateral_ki"),
                 lateral_kd=kwargs.get("lateral_kd"),
                 deadzone=kwargs.get("lateral_deadzone"),
             ),
-            YawMaintainer(
-                self.target_yaw, vision_state, control_state, auto_event,
-                yaw_kp=kwargs.get("yaw_kp"),
-                yaw_ki=kwargs.get("yaw_ki"),
-                yaw_kd=kwargs.get("yaw_kd"),
-                deadzone=kwargs.get("yaw_deadzone"),
-            ),
+            # YawMaintainer(
+            #     self.target_yaw,
+            #     vision_state,
+            #     control_state,
+            #     auto_event,
+            #     yaw_kp=kwargs.get("yaw_kp"),
+            #     yaw_ki=kwargs.get("yaw_ki"),
+            #     yaw_kd=kwargs.get("yaw_kd"),
+            #     deadzone=kwargs.get("yaw_deadzone"),
+            # ),
             ForwardMaintainer(
-                self.target_z, vision_state, control_state, auto_event,
+                self.target_z,
+                vision_state,
+                control_state,
+                auto_event,
                 forward_kp=kwargs.get("forward_kp"),
                 forward_ki=kwargs.get("forward_ki"),
                 forward_kd=kwargs.get("forward_kd"),
@@ -108,6 +119,15 @@ class Rov26Autonomous:
         while self._is_running.is_set():
             if self.auto_event.is_set():
                 logger.info("Autonomous sequence triggered via auto_event flag.")
+
+                with self.control_state as control:
+                    control.forward = 1450
+
+                time.sleep(4)
+
+                with self.control_state as control:
+                    control.forward = 1500
+
                 self.descend_until_qr_found()
 
                 logger.info(
@@ -119,6 +139,15 @@ class Rov26Autonomous:
                         all_maintained = (
                             all_maintained and maintainer.control_until_target()
                         )
+
+                        time.sleep(4)
+
+                        with self.control_state as control:
+                            control.forward = 1500
+                            control.lateral = 1500
+                            control.vertical = 1500
+                            control.yaw = 1500
+                            control.servo = 1700
 
                     if all_maintained:
                         logger.info(

@@ -33,6 +33,7 @@ from rov26backend.controllers.rc_mixer import ROV26RcMixer
 from rov26backend.controllers.rov26autonomous import Rov26Autonomous
 from rov26backend.controllers.rov26tuner import LivePWMOverlayTuner
 from rov26backend.models.control_state import ControlState
+from rov26backend.models.depth_state import DepthState
 from rov26backend.models.input_state import InputState
 from rov26backend.models.polygon_state import PolygonState
 from rov26backend.models.telemetry_state import TelemetryState
@@ -84,6 +85,8 @@ def rov(
     control_state = ControlState()
     telemetry_state = TelemetryState()
     vision_state = VisionState()
+    depth_state = DepthState()
+
     mikon_param_queue = queue.Queue(maxsize=60)
     frame_queue = queue.Queue(maxsize=1)
 
@@ -138,6 +141,7 @@ def rov(
         autonomous = Rov26Autonomous(
             control_state,
             vision_state,
+            depth_state,
             auto_event,
             target_x=target_x,
             target_y=target_y,
