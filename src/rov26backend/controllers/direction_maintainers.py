@@ -166,13 +166,13 @@ class VerticalMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("vertical_kp") or 1000.0,
+            kwargs.get("vertical_kp") or 750.0,
             kwargs.get("vertical_ki") or 0.0,
             kwargs.get("vertical_kd") or 0.0,
             kwargs.get("vertical_deadzone") or 0.03,
         )
 
-        self.pid.output_limits = (-100, 100)
+        self.pid.output_limits = (-400, 400)
 
     def control_to(self, value):
         with self.control_state as control:

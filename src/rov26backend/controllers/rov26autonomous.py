@@ -24,7 +24,7 @@ class Rov26Autonomous:
         **kwargs,
     ):
         self.target_x = kwargs.get("target_x") or 0.7
-        self.target_y = kwargs.get("target_y") or -0.27
+        self.target_y = kwargs.get("target_y") or -0.3
         self.target_z = kwargs.get("target_z") or 24.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
 
@@ -130,7 +130,7 @@ class Rov26Autonomous:
                             maintainer.control_until_target() and all_maintained
                         )
 
-                        time.sleep(3)
+                        time.sleep(6)
 
                         with self.control_state as control:
                             control.forward = 1500

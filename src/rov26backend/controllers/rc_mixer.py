@@ -20,7 +20,7 @@ class ROV26RcMixer:
     ):
         self.smoothing_factor = kwargs.get("smoothing_factor") or 0.025
         self.servo_open = kwargs.get("servo_open") or 1880
-        self.servo_close = kwargs.get("servo_close") or 2100
+        self.servo_close = kwargs.get("servo_close") or 2390
         self.servo_target = self.servo_open
 
         self.auto_event = auto_event
@@ -87,6 +87,7 @@ class ROV26RcMixer:
             self._update_motor_inputs(inputs)
             self._update_mode_inputs(inputs)
             self._update_servo_inputs(inputs)
+            # self._update_servo_inputs_analog(inputs)
 
         if self.auto_event.is_set():
             self._update_poll_auto_stop(inputs)
@@ -114,11 +115,27 @@ class ROV26RcMixer:
                 control.yaw = int(self.current_yaw)
 
     def _update_servo_inputs(self, inputs: InputState):
-        if inputs.dpad_vert == -1:
+        if inputs.dpad_vert == 1:
             self.servo_target = self.servo_open
-        elif inputs.dpad_vert == 1:
+        elif inputs.dpad_vert == -1:
             self.servo_target = self.servo_close
-        self.servo_pwm += self.smoothing_factor * (self.servo_target - self.servo_pwm)
+        # self.servo_pwm += self.smoothing_factor * (self.servo_target - self.servo_pwm)
+        self.servo_pwm = self.servo_target
+
+        with self.control_state as control:
+            control.servo = int(self.servo_pwm)
+
+    def _update_servo_inputs_analog(self, inputs: InputState):
+        # if inputs.dpad_vert == -1:
+        #     self.servo_target += 1
+        # elif inputs.dpad_vert == 1:
+        #     self.servo_target -= 1
+        # self.servo_pwm += self.smoothing_factor * (self.servo_target - self.servo_pwm)
+
+        if inputs.dpad_vert == -1:
+            self.servo_pwm += 1
+        elif inputs.dpad_vert == 1:
+            self.servo_pwm -= 1
 
         with self.control_state as control:
             control.servo = int(self.servo_pwm)

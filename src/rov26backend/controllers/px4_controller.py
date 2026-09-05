@@ -74,7 +74,7 @@ class PixhawkController:
             target_mode = latest_control_state.target_mode
             if target_mode is not None:
                 if target_mode == "AUTO":
-                    self.set_mode("ALT_HOLD")
+                    self.set_mode("STABILIZE")
                     self.auto_event.set()
                     logger.info("Mode set to : Auto")
                 else:
