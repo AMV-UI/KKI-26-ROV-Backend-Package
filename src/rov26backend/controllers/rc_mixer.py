@@ -20,7 +20,7 @@ class ROV26RcMixer:
     ):
         self.smoothing_factor = kwargs.get("smoothing_factor") or 0.025
         self.servo_open = kwargs.get("servo_open") or 1880
-        self.servo_close = kwargs.get("servo_close") or 2420
+        self.servo_close = kwargs.get("servo_close") or 2100
         self.servo_target = self.servo_open
 
         self.auto_event = auto_event
@@ -77,12 +77,19 @@ class ROV26RcMixer:
             self.update_control_from_inputs()
             time.sleep(0.02)
 
+    def _update_poll_auto_stop(self, inputs):
+        if self.autonomous_btn.toggle(inputs.btn_up):
+            self.auto_event.clear()
+
     def update_control_from_inputs(self):
         inputs = self.input_state.get_latest()
         if not self.auto_event.is_set():
             self._update_motor_inputs(inputs)
             self._update_mode_inputs(inputs)
             self._update_servo_inputs(inputs)
+
+        if self.auto_event.is_set():
+            self._update_poll_auto_stop(inputs)
 
         # logger.debug(f"""
         #               Sending Control:
@@ -93,10 +100,16 @@ class ROV26RcMixer:
         #               servo: {self.servo_pwm}
         #               """)
 
+        is_fwd_stronger = abs(self.current_forward - 1500) > abs(
+            self.current_lateral - 1500
+        )
+
         if not self.auto_event.is_set():
             with self.control_state as control:
-                control.forward = int(self.current_forward)
-                control.lateral = int(self.current_lateral)
+                control.forward = int(self.current_forward if is_fwd_stronger else 1500)
+                control.lateral = int(
+                    self.current_lateral if not is_fwd_stronger else 1500
+                )
                 control.vertical = int(self.current_vertical)
                 control.yaw = int(self.current_yaw)
 

@@ -21,7 +21,7 @@ class DirectionMaintainer:
         kd=0,
         deadzone=0.5,
     ):
-        self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-50, 50))
+        self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-400, 400))
         self.auto_event = auto_event
         self.target = target
         self.control_state = control_state
@@ -100,7 +100,9 @@ class ForwardMaintainer(DirectionMaintainer):
 
     def control_to(self, value):
         with self.control_state as control:
-            control.forward = int(value)
+            current = self.get_current()
+            if current != 0:
+                control.forward = int(value)
 
             if self.vertical_maintainer:
                 vert_current = self.vertical_maintainer.get_current()
@@ -135,7 +137,9 @@ class LateralMaintainer(DirectionMaintainer):
 
     def control_to(self, value):
         with self.control_state as control:
-            control.lateral = int(value)
+            current = self.get_current()
+            if current != 0:
+                control.lateral = int(value)
 
             if self.vertical_maintainer:
                 vert_current = self.vertical_maintainer.get_current()
@@ -175,7 +179,6 @@ class VerticalMaintainer(DirectionMaintainer):
             control.vertical = int(value)
 
     def get_current(self):
-        logger.info(f"DEPTH: {self.depth_state.get_latest().depth}")
         return self.depth_state.get_latest().depth
 
 
