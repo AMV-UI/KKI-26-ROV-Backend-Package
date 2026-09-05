@@ -1,13 +1,15 @@
-from pymavlink import mavutil
-from rov26backend.models.control_state import ControlState
-from rov26backend.models.telemetry_state import TelemetryState
 import logging
-import serial.tools.list_ports
+import queue
 import sys
 import threading
 import time
-import queue
 
+import serial.tools.list_ports
+from pymavlink import mavutil
+
+from rov26backend.models.control_state import ControlState
+from rov26backend.models.depth_state import DepthState
+from rov26backend.models.telemetry_state import TelemetryState
 
 logger = logging.getLogger("ROV.px4")
 
@@ -17,6 +19,7 @@ class PixhawkController:
         self,
         control_state: ControlState,
         telemetry_state: TelemetryState,
+        depth_state: DepthState,
         auto_event: threading.Event,
         param_queue: queue.Queue,
     ):
@@ -29,6 +32,7 @@ class PixhawkController:
         self._is_running = threading.Event()
         self.control_state = control_state
         self.telemetry_state = telemetry_state
+        self.depth_state = depth_state
         self.auto_event = auto_event
 
     def start(self):
@@ -119,7 +123,7 @@ class PixhawkController:
     def _init_serial(self):
         ports = self._get_serial_ports()
         if not ports:
-            logger.warn("No USB serial ports found (Pixhawk)")
+            logger.warning("No USB serial ports found (Pixhawk)")
             return
         logger.info(f"Available USB ports: {ports}")
         for port in ports:
@@ -168,10 +172,10 @@ class PixhawkController:
                 )
                 return
             except Exception as e:
-                logger.warn(f"Failed to connect to Pixhawk on {port}: {e}")
+                logger.warning(f"Failed to connect to Pixhawk on {port}: {e}")
                 self.master = None
 
-        logger.warn("Pixhawk not found on any port")
+        logger.warning("Pixhawk not found on any port")
 
     def arm(self, block=True):
         if self.master is None:
@@ -277,6 +281,8 @@ class PixhawkController:
 
                 if msg_coor is not None:
                     ts.depth = msg_coor.relative_alt / 1000.0
+                    with self.depth_state:
+                        self.depth_state.depth = msg_coor.relative_alt / 1000.0
 
                 ts.mode = self.get_mode()
 
@@ -286,13 +292,13 @@ class PixhawkController:
             return
 
         except Exception as error:
-            self.log_err(f"Error in request_pixhawk: {error}")
+            logger.error(f"Error in request_pixhawk: {error}")
             return
 
     def set_mode(self, mode):
         self.pxmode = mode
         if self.pxmode not in self.master.mode_mapping():
-            logger.warn(f"Unknown Mode : {self.pxmode}")
+            logger.warning(f"Unknown Mode : {self.pxmode}")
             return
 
         mode_id = self.master.mode_mapping()[self.pxmode]

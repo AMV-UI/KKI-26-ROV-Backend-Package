@@ -83,8 +83,10 @@ class ForwardMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
+        vertical_maintainer=None,  # Inject the vertical maintainer
         **kwargs,
     ):
+        self.vertical_maintainer = vertical_maintainer
         super().__init__(
             target,
             vision_state,
@@ -100,6 +102,11 @@ class ForwardMaintainer(DirectionMaintainer):
         with self.control_state as control:
             control.forward = int(value)
 
+            if self.vertical_maintainer:
+                vert_current = self.vertical_maintainer.get_current()
+                vert_output = self.vertical_maintainer.pid(vert_current)
+                control.vertical = int(1500 + vert_output)
+
     def get_current(self):
         return self.vision_state.get_latest().tvec[2]
 
@@ -111,8 +118,10 @@ class LateralMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
+        vertical_maintainer=None,  # Inject the vertical maintainer
         **kwargs,
     ):
+        self.vertical_maintainer = vertical_maintainer
         super().__init__(
             target,
             vision_state,
@@ -127,6 +136,11 @@ class LateralMaintainer(DirectionMaintainer):
     def control_to(self, value):
         with self.control_state as control:
             control.lateral = int(value)
+
+            if self.vertical_maintainer:
+                vert_current = self.vertical_maintainer.get_current()
+                vert_output = self.vertical_maintainer.pid(vert_current)
+                control.vertical = int(1500 + vert_output)
 
     def get_current(self):
         return self.vision_state.get_latest().tvec[0]
@@ -148,17 +162,20 @@ class VerticalMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("vertical_kp") or 10.0,
+            kwargs.get("vertical_kp") or 1000.0,
             kwargs.get("vertical_ki") or 0.0,
             kwargs.get("vertical_kd") or 0.0,
-            kwargs.get("vertical_deadzone") or 0.5,
+            kwargs.get("vertical_deadzone") or 0.03,
         )
+
+        self.pid.output_limits = (-100, 100)
 
     def control_to(self, value):
         with self.control_state as control:
             control.vertical = int(value)
 
     def get_current(self):
+        logger.info(f"DEPTH: {self.depth_state.get_latest().depth}")
         return self.depth_state.get_latest().depth
 
 

@@ -24,7 +24,7 @@ class Rov26Autonomous:
         **kwargs,
     ):
         self.target_x = kwargs.get("target_x") or 0.7
-        self.target_y = kwargs.get("target_y") or 0.0
+        self.target_y = kwargs.get("target_y") or -0.27
         self.target_z = kwargs.get("target_z") or 24.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
 
@@ -33,44 +33,36 @@ class Rov26Autonomous:
         self.auto_event = auto_event
         self.control_state = control_state
         self.vision_state = vision_state
+        self.vertical_maintainer = VerticalMaintainer(
+            self.target_y,
+            vision_state,
+            control_state,
+            depth_state,
+            auto_event,
+            vertical_kp=kwargs.get("vertical_kp"),
+            vertical_ki=kwargs.get("vertical_ki"),
+            vertical_kd=kwargs.get("vertical_kd"),
+            deadzone=kwargs.get("vertical_deadzone"),
+        )
 
         self.maintainers = [
-            VerticalMaintainer(
-                self.target_y,
-                vision_state,
-                control_state,
-                depth_state,
-                auto_event,
-                vertical_kp=kwargs.get("vertical_kp"),
-                vertical_ki=kwargs.get("vertical_ki"),
-                vertical_kd=kwargs.get("vertical_kd"),
-                deadzone=kwargs.get("vertical_deadzone"),
-            ),
             LateralMaintainer(
                 self.target_x,
                 vision_state,
                 control_state,
                 auto_event,
+                vertical_maintainer=self.vertical_maintainer,  # Pass instance here
                 lateral_kp=kwargs.get("lateral_kp"),
                 lateral_ki=kwargs.get("lateral_ki"),
                 lateral_kd=kwargs.get("lateral_kd"),
                 deadzone=kwargs.get("lateral_deadzone"),
             ),
-            # YawMaintainer(
-            #     self.target_yaw,
-            #     vision_state,
-            #     control_state,
-            #     auto_event,
-            #     yaw_kp=kwargs.get("yaw_kp"),
-            #     yaw_ki=kwargs.get("yaw_ki"),
-            #     yaw_kd=kwargs.get("yaw_kd"),
-            #     deadzone=kwargs.get("yaw_deadzone"),
-            # ),
             ForwardMaintainer(
                 self.target_z,
                 vision_state,
                 control_state,
                 auto_event,
+                vertical_maintainer=self.vertical_maintainer,  # Pass instance here
                 forward_kp=kwargs.get("forward_kp"),
                 forward_ki=kwargs.get("forward_ki"),
                 forward_kd=kwargs.get("forward_kd"),
@@ -111,7 +103,7 @@ class Rov26Autonomous:
                     logger.info("Target locked! QR marker detected")
                     break
                 else:
-                    control.vertical = 1450
+                    control.vertical = 1400
             time.sleep(0.01)
 
     def run(self):
@@ -123,12 +115,10 @@ class Rov26Autonomous:
                 with self.control_state as control:
                     control.forward = 1450
 
-                time.sleep(4)
+                time.sleep(6)
 
                 with self.control_state as control:
                     control.forward = 1500
-
-                self.descend_until_qr_found()
 
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
@@ -137,10 +127,10 @@ class Rov26Autonomous:
                     all_maintained = True
                     for maintainer in self.maintainers:
                         all_maintained = (
-                            all_maintained and maintainer.control_until_target()
+                            maintainer.control_until_target() and all_maintained
                         )
 
-                        time.sleep(4)
+                        time.sleep(3)
 
                         with self.control_state as control:
                             control.forward = 1500

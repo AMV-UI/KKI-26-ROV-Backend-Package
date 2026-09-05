@@ -172,7 +172,11 @@ def rov(
             )
         else:
             mikon = PixhawkController(
-                control_state, telemetry_state, auto_event, mikon_param_queue
+                control_state,
+                telemetry_state,
+                depth_state,
+                auto_event,
+                mikon_param_queue,
             )
         mikon.start()
 
