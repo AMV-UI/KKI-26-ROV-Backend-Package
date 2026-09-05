@@ -24,12 +24,12 @@ MOTOR_COORDS = {
 PARAMS_CONFIG = [
     ("MIN", 1000, 1500, 1, int),
     ("MAX", 1500, 2000, 1, int),
-    ("THROTTLE", -1.0, 1.0, 0.01, float),
-    ("YAW", -1.0, 1.0, 0.01, float),
-    ("FORWARD", -1.0, 1.0, 0.01, float),
-    ("LATERAL", -1.0, 1.0, 0.01, float),
-    ("ROLL", -1.0, 1.0, 0.01, float),
-    ("PITCH", -1.0, 1.0, 0.01, float),
+    ("THROTTLE", -100.0, 100.0, 0.01, float),
+    ("YAW", -1000.0, 200.0, 0.01, float),
+    ("FORWARD", -100.0, 100.0, 0.01, float),
+    ("LATERAL", -100.0, 100.0, 0.01, float),
+    ("ROLL", -100.0, 100.0, 0.01, float),
+    ("PITCH", -100.0, 100.0, 0.01, float),
 ]
 
 # Global PID parameters
