@@ -87,25 +87,6 @@ class Rov26Autonomous:
             self._thread = None
         logger.info("Autonomous manager thread fully stopped.")
 
-    def descend_until_qr_found(self):
-        logger.info(
-            "Autonomous Phase 1: Commencing vertical descent looking for QR Target..."
-        )
-        while self._is_running.is_set() and self.auto_event.is_set():
-            latest_vision_state = self.vision_state.get_latest()
-            tvec = latest_vision_state.tvec
-
-            logger.debug("Descent Loop")
-
-            with self.control_state as control:
-                if tvec[0] != 0 or tvec[1] != 0 or tvec[2] != 0:
-                    control.vertical = 1500
-                    logger.info("Target locked! QR marker detected")
-                    break
-                else:
-                    control.vertical = 1400
-            time.sleep(0.01)
-
     def run(self):
         logger.info("Autonomous execution thread processing loops active.")
         while self._is_running.is_set():
@@ -113,7 +94,7 @@ class Rov26Autonomous:
                 logger.info("Autonomous sequence triggered via auto_event flag.")
 
                 with self.control_state as control:
-                    control.forward = 1450
+                    control.forward = 1425
 
                 time.sleep(6)
 
@@ -130,14 +111,14 @@ class Rov26Autonomous:
                             maintainer.control_until_target() and all_maintained
                         )
 
-                        time.sleep(6)
-
                         with self.control_state as control:
                             control.forward = 1500
                             control.lateral = 1500
                             control.vertical = 1500
                             control.yaw = 1500
                             control.servo = 1700
+
+                        time.sleep(6)
 
                     if all_maintained:
                         logger.info(

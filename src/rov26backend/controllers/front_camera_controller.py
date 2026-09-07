@@ -45,39 +45,17 @@ class FrontCamera(BaseCamera):
         self.qr_text = "NOT_FOUND"
         self.last_qr_read = time.time()
 
-        # Threading state
-        self.latest_frame = None
-        self.frame_lock = threading.Lock()
-        self.is_running = True
-
-        # Thread terpisah untuk pemrosesan vision
-        self.worker_thread = threading.Thread(target=self._process_loop, daemon=True)
-        self.worker_thread.start()
-
     def update_frame(self, frame):
         """Memasukkan frame terbaru dari camera capture thread secara safe."""
         with self.frame_lock:
             self.latest_frame = frame.copy() if frame is not None else None
 
-    def _process_loop(self):
-        """Loop pemrosesan yang berjalan independen di background thread."""
-        while self.is_running:
-            frame_to_process = None
-            with self.frame_lock:
-                if self.latest_frame is not None:
-                    frame_to_process = self.latest_frame.copy()
-
-            if frame_to_process is not None:
-                self.process_and_publish(frame_to_process)
-                time.sleep(0.01)  # Beri sedikit jeda agar CPU tidak 100% usage
-            else:
-                time.sleep(0.02)
-
     def process_and_publish(self, frame):
         try:
             self.frame_queue.put_nowait(frame)
         except queue.Full:
-            pass
+            self.frame_queue.get()
+            self.frame_queue.put_nowait(frame)
 
         # 2. Retrieve the latest polygon state
         current_poly_state = self.polygon_state.get_latest()

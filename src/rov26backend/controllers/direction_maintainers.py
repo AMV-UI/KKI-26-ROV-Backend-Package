@@ -20,6 +20,7 @@ class DirectionMaintainer:
         ki=0,
         kd=0,
         deadzone=0.5,
+        timeout=3,
     ):
         self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-400, 400))
         self.auto_event = auto_event
@@ -27,6 +28,7 @@ class DirectionMaintainer:
         self.control_state = control_state
         self.vision_state = vision_state
         self.deadzone = deadzone
+        self.timeout = timeout
         logger.info(
             f"{self.__class__.__name__} initialized. Target: {self.target}, "
             f"PID: ({kp}, {ki}, {kd}), Deadzone: {self.deadzone}"
@@ -47,6 +49,7 @@ class DirectionMaintainer:
 
         long_maintained = False
         last_not_maintained = time.time()
+        last_maintained = time.time()
 
         while not long_maintained and self.auto_event.is_set():
             current = self.get_current()
@@ -59,8 +62,18 @@ class DirectionMaintainer:
             maintained = abs(current - self.target) < self.deadzone
             if not maintained:
                 last_not_maintained = time.time()
+            else:
+                last_maintained = time.time()
 
-            long_maintained = time.time() - last_not_maintained > 1.0
+            time_since_not_maintained = time.time() - last_not_maintained
+
+            long_maintained = time_since_not_maintained > 1.0
+
+            if time.time() - last_maintained > self.timeout:
+                logger.info(
+                    f"[{self.__class__.__name__}] Target passed timeout {self.timeout} seconds! Settled at: {self.get_current():.3f}"
+                )
+                return False
 
             time.sleep(0.01)
 
@@ -103,6 +116,8 @@ class ForwardMaintainer(DirectionMaintainer):
             current = self.get_current()
             if current != 0:
                 control.forward = int(value)
+            else:
+                control.forward = 1500
 
             if self.vertical_maintainer:
                 vert_current = self.vertical_maintainer.get_current()
@@ -132,7 +147,7 @@ class LateralMaintainer(DirectionMaintainer):
             kwargs.get("lateral_kp") or -10.0,
             kwargs.get("lateral_ki") or 0.0,
             kwargs.get("lateral_kd") or 0.0,
-            kwargs.get("lateral_deadzone") or 1.0,
+            kwargs.get("lateral_deadzone") or 0.5,
         )
 
     def control_to(self, value):
@@ -140,6 +155,8 @@ class LateralMaintainer(DirectionMaintainer):
             current = self.get_current()
             if current != 0:
                 control.lateral = int(value)
+            else:
+                control.lateral = 1500
 
             if self.vertical_maintainer:
                 vert_current = self.vertical_maintainer.get_current()

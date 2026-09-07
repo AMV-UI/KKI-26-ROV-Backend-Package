@@ -1,7 +1,8 @@
 import logging
+import time
+
 import cv2
 import numpy as np
-import time
 
 logger = logging.getLogger("ROV.vision")
 
@@ -54,6 +55,10 @@ class solvePnP:
 
     def process(self, polygon_pts):
         if not polygon_pts or len(polygon_pts) != 4:
+            with self.vision_state as vision_state:
+                vision_state.tvec = [0, 0, 0]
+                vision_state.rvec = [0, 0, 0]
+                vision_state.euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
             return False, None, None
 
         rect = self.orderPoints(polygon_pts)
