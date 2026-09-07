@@ -1,8 +1,9 @@
-import os
 import json
-import tkinter as tk
+import os
 import queue
 import threading
+import tkinter as tk
+
 from PIL import Image, ImageTk
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -75,7 +76,7 @@ class LivePWMOverlayTuner:
     def _load_config(self):
         defaults = {
             m: {p[0]: (1500 if p[4] == int else 0.0) for p in PARAMS_CONFIG}
-            for m in MOTOR_COORDS.keys()
+            for m in MOTOR_COORDS
         }
 
         # Add Global parameter defaults

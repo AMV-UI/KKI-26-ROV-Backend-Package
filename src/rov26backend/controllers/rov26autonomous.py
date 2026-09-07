@@ -24,7 +24,7 @@ class Rov26Autonomous:
         **kwargs,
     ):
         self.target_x = kwargs.get("target_x") or 0.7
-        self.target_y = kwargs.get("target_y") or -0.3
+        self.target_y = kwargs.get("target_y") or -0.33
         self.target_z = kwargs.get("target_z") or 24.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
 
@@ -101,6 +101,11 @@ class Rov26Autonomous:
                 with self.control_state as control:
                     control.forward = 1500
 
+                self.vertical_maintainer.control_until_timeout(6)
+
+                with self.control_state as control:
+                    control.target_mode = "ALT_HOLD"
+
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
                 )
@@ -114,11 +119,10 @@ class Rov26Autonomous:
                         with self.control_state as control:
                             control.forward = 1500
                             control.lateral = 1500
-                            control.vertical = 1500
                             control.yaw = 1500
                             control.servo = 1700
 
-                        time.sleep(6)
+                        self.vertical_maintainer.control_until_timeout(6)
 
                     if all_maintained:
                         logger.info(

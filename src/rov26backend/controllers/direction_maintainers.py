@@ -183,13 +183,30 @@ class VerticalMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("vertical_kp") or 750.0,
+            kwargs.get("vertical_kp") or 16000.0,
             kwargs.get("vertical_ki") or 0.0,
             kwargs.get("vertical_kd") or 0.0,
             kwargs.get("vertical_deadzone") or 0.03,
         )
 
         self.pid.output_limits = (-400, 400)
+
+    def control_until_timeout(self, timeout):
+
+        end = time.time() + timeout
+
+        while time.time() < end:
+            current = self.get_current()
+            output = self.pid(current)
+            logger.debug(
+                f"[{self.__class__.__name__}] Tracking loop | Current: {current:.3f}, Error: {abs(current - self.target):.3f}, PID Output: {output:.3f}"
+            )
+            self.control_to(int(1500 + output))
+            time.sleep(0.01)
+
+        logger.info(
+            f"[{self.__class__.__name__}] Target successfully reached! Settled at: {self.get_current():.3f}"
+        )
 
     def control_to(self, value):
         with self.control_state as control:
