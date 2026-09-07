@@ -1,16 +1,23 @@
+import queue
+import threading
 import cv2
 import numpy as np
 import logging
+from qrdet import QRDetector
+
+from rov26backend.models.vision_state import VisionState
 
 logger = logging.getLogger("ROV.vision")
 
 
 class QRDebouncer:
+    """Smoothing polygon"""
+
     def __init__(
         self, required_streak=3, max_missing_frames=4, max_jump_pixels=75, alpha=0.3
     ):
         self.required_streak = required_streak
-        self.max_missing_frames = max_missing_frames  # We need this back!
+        self.max_missing_frames = max_missing_frames
         self.max_jump_pixels = max_jump_pixels
         self.alpha = alpha
 
@@ -63,166 +70,73 @@ class QRDebouncer:
         return None
 
 
-class QRPolygonFinder:
-    def __init__(self):
+class QRTrackerPipeline:
+    """Class gabungan: AI Detector (qrdet) + Debouncer untuk menghaluskan Polygon."""
+
+    def __init__(self, model_size="n", conf_th=0.5):
+        self.detector = QRDetector(model_size=model_size, conf_th=conf_th)
         self.debouncer = QRDebouncer()
 
-    def preprocess_frame(self, frame):
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        thresh = cv2.adaptiveThreshold(
-            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
-        )
-
-        return thresh
-
-    def get_polygon_from_frame(self, frame):
-        preprocessed_frame = self.preprocess_frame(frame)
-
-        contours, hierarchy = cv2.findContours(
-            preprocessed_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
-        )
+    def process_frame(self, frame):
+        """Menerima frame BGR, deteksi dengan AI, lalu di-debounce."""
+        detections = self.detector.detect(image=frame, is_bgr=True)
 
         raw_box = None
+        if detections:
+            polygon = np.array(detections[0]["polygon_xy"], dtype=np.int32)
+            perimeter = cv2.arcLength(polygon, True)
+            corners = cv2.approxPolyDP(polygon, 0.05 * perimeter, True)
 
-        if hierarchy is not None:
-            hierarchy = hierarchy[0]
-            raw_patterns = []
+            if len(corners.shape) == 3:
+                corners = corners.reshape(-1, 2)
+            raw_box = corners
 
-            for i, contour in enumerate(contours):
-                child_idx = hierarchy[i][2]
-                if child_idx != -1:
-                    grandchild_idx = hierarchy[child_idx][2]
-                    if grandchild_idx != -1:
-                        area = cv2.contourArea(contour)
-                        if area > 100:
-                            peri = cv2.arcLength(contour, True)
-                            approx = cv2.approxPolyDP(contour, 0.04 * peri, True)
-                            # 1. RELAXED SKEW CHECK:
-                            # We trust the hierarchy (parent->child->grandchild) more than geometry now.
-                            # We just ensure it has 4 sides and a much looser aspect ratio to allow for 45-degree trapezoids.
-                            circularity = 4 * np.pi * (area / (peri * peri))
-                            logger.debug(f"""
-                                         Circularity: {circularity}
-                                         """)
-                            if len(approx) == 4 or abs(1.0 - circularity) < 0.3:
-                                x, y, w, h = cv2.boundingRect(approx)
-                                aspect_ratio = float(w) / h
-                                if 0.3 <= aspect_ratio <= 3.0:
-                                    raw_patterns.append(contour)
+        smoothed_polygon = self.debouncer.update(raw_box, frame.shape)
+        return smoothed_polygon
 
-            distinct_patterns = []
-            known_centers = []
 
-            for contour in raw_patterns:
-                M = cv2.moments(contour)
-                if M["m00"] != 0:
-                    cX = int(M["m10"] / M["m00"])
-                    cY = int(M["m01"] / M["m00"])
+class QRDetectorWorker:
+    """Worker Thread yang menyambung dengan FrontCamera.
+    
+    Tugas: Mengambil frame dari FrontCamera Queue -> Deteksi & Debounce -> Update ke VisionState.
+    """
 
-                    # We use half the width of the contour as a dynamic distance threshold
-                    _, _, w, _ = cv2.boundingRect(contour)
-                    min_dist = w / 2
+    def __init__(self, frame_queue: queue.Queue, vision_state: VisionState):
+        self.frame_queue = frame_queue
+        self.vision_state = vision_state
+        self.pipeline = QRTrackerPipeline(model_size="n", conf_th=0.5)
 
-                    # Check if this center is too close to an already found corner
-                    is_duplicate = False
-                    for prev_cX, prev_cY in known_centers:
-                        # Calculate Euclidean distance between centers
-                        dist = np.sqrt((cX - prev_cX) ** 2 + (cY - prev_cY) ** 2)
-                        if dist < min_dist:
-                            is_duplicate = True
-                            break
+        self.is_running = True
+        self.thread = threading.Thread(target=self._worker, daemon=True)
 
-                    if not is_duplicate:
-                        known_centers.append((cX, cY))
-                        distinct_patterns.append(contour)
+    def start(self):
+        self.thread.start()
 
-            # Use distinct_patterns instead of the raw list
-            if len(distinct_patterns) >= 3:
-                # --- NEW: FILTER FALSE POSITIVES BY AREA SIMILARITY ---
-                # Pair each center with its contour area
-                candidates = []
-                for i, cnt in enumerate(distinct_patterns):
-                    area = cv2.contourArea(cnt)
-                    candidates.append((known_centers[i][0], known_centers[i][1], area))
+    def _worker(self):
+        """Loop background yang me-pull frame dari FrontCamera."""
+        while self.is_running:
+            try:
+                # Ambil frame yang dikirim oleh FrontCamera
+                frame = self.frame_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
 
-                # Sort candidates by area, from smallest to largest
-                candidates.sort(key=lambda x: x[2])
+            if frame is None:
+                break
 
-                # Slide a window of 3 across the list to find the triplet with the most similar areas
-                best_triplet = None
-                min_area_diff = float("inf")
+            # Process frame memakai AI & Debouncer
+            smoothed_polygon = self.pipeline.process_frame(frame)
 
-                for i in range(len(candidates) - 2):
-                    # Difference between the largest and smallest area in this triplet
-                    area_diff = candidates[i + 2][2] - candidates[i][2]
+            # Update hasilnya langsung ke shared object VisionState
+            with self.vision_state as vs:
+                if smoothed_polygon is not None:
+                    vs.qr_polygon = [
+                        (float(pt[0]), float(pt[1])) for pt in smoothed_polygon
+                    ]
+                else:
+                    vs.qr_polygon = []
 
-                    if area_diff < min_area_diff:
-                        min_area_diff = area_diff
-                        best_triplet = candidates[i : i + 3]
-
-                # Extract just the X, Y coordinates of the best 3
-                pts = np.array(
-                    [(pt[0], pt[1]) for pt in best_triplet], dtype=np.float32
-                )
-
-                # --- NEW: COLLINEARITY / AREA CHECK ---
-                x1, y1 = pts[0]
-                x2, y2 = pts[1]
-                x3, y3 = pts[2]
-
-                # Calculate the area of the triangle formed by the 3 points
-                triangle_area = 0.5 * abs(
-                    x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)
-                )
-
-                # If the area is tiny, the points are in a straight line. Reject them.
-                # A 500 pixel area is a very safe minimum for a readable QR code triangle.
-                if triangle_area > 500:
-                    # Find distances between all three points
-                    dist_01 = np.linalg.norm(pts[0] - pts[1])
-                    dist_02 = np.linalg.norm(pts[0] - pts[2])
-                    dist_12 = np.linalg.norm(pts[1] - pts[2])
-
-                    # The longest distance is the hypotenuse.
-                    if dist_12 > dist_01 and dist_12 > dist_02:
-                        tl, p1, p2 = pts[0], pts[1], pts[2]
-                    elif dist_02 > dist_01 and dist_02 > dist_12:
-                        tl, p1, p2 = pts[1], pts[0], pts[2]
-                    else:
-                        tl, p1, p2 = pts[2], pts[0], pts[1]
-
-                    # --- SKEW VALIDATION CHECKS ---
-                    # Create vectors for the two legs of the "L"
-                    vec1 = p1 - tl
-                    vec2 = p2 - tl
-
-                    len1 = np.linalg.norm(vec1)
-                    len2 = np.linalg.norm(vec2)
-
-                    if len1 > 0 and len2 > 0:
-                        # 1. Leg Ratio (0.0 to 1.0). 1.0 means perfectly equal length.
-                        leg_ratio = min(len1, len2) / max(len1, len2)
-
-                        # 2. Angle Check using Dot Product. 0.0 means perfectly 90 degrees.
-                        cos_theta = np.dot(vec1, vec2) / (len1 * len2)
-
-                        # PARAMETERS TO TUNE:
-                        if leg_ratio > 0.4 and abs(cos_theta) < 0.8:
-                            # Estimate the missing 4th center (Bottom-Right) using vector math
-                            br = p1 + p2 - tl
-
-                            # Combine into an array of 4 points
-                            four_points = np.array([tl, p1, br, p2], dtype=np.int32)
-
-                            # Sort the points clockwise based on their angles from the centroid
-                            center = np.mean(four_points, axis=0)
-                            angles = np.arctan2(
-                                four_points[:, 1] - center[1],
-                                four_points[:, 0] - center[0],
-                            )
-                            sorted_points = four_points[np.argsort(angles)]
-
-                            raw_box = sorted_points
-
-        return self.debouncer.update(raw_box, frame.shape)
+    def stop(self):
+        self.is_running = False
+        if self.thread and self.thread.is_alive():
+            self.thread.join()

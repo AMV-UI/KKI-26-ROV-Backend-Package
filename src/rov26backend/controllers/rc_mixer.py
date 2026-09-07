@@ -82,15 +82,9 @@ class ROV26RcMixer:
         self._update_mode_inputs(inputs)
         self._update_servo_inputs(inputs)
 
-        logger.debug(f"""
-                      Sending Control:
-                      forward: {self.current_forward}
-                      lateral: {self.current_lateral}
-                      vertical: {self.current_vertical}
-                      yaw: {self.current_yaw}
-                      servo: {self.servo_pwm}
-                      """)
-
+        # Print realtime ke terminal tanpa ganti baris (pakai \r)
+        print(f"\r[JOYSTICK] FWD: {int(self.current_forward)} | LAT: {int(self.current_lateral)} | VERT: {int(self.current_vertical)} | YAW: {int(self.current_yaw)}", end="", flush=True)
+    
         if not self.auto_event.is_set():
             with self.control_state as control:
                 control.forward = int(self.current_forward)
