@@ -24,7 +24,7 @@ class Rov26Autonomous:
         **kwargs,
     ):
         self.target_x = kwargs.get("target_x") or 0.7
-        self.target_y = kwargs.get("target_y") or -0.33
+        self.target_y = kwargs.get("target_y") or -3.9
         self.target_z = kwargs.get("target_z") or 24.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
 

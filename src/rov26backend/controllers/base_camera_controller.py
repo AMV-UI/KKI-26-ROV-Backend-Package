@@ -1,11 +1,13 @@
-import cv2
-import subprocess
-import imageio_ffmpeg
-from rov26backend.utils.device_fetching import get_webcam_device_idx
 import logging
+import subprocess
 import sys
 import threading
 import time
+
+import cv2
+import imageio_ffmpeg
+
+from rov26backend.utils.device_fetching import get_webcam_device_idx
 
 logger = logging.getLogger("ROV.cam")
 

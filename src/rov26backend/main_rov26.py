@@ -181,7 +181,7 @@ def rov(
         mikon.start()
 
     if "bottom_cam" not in no:
-        bottom_camera = BottomCamera(bottom_cam_id=bottom_cam_id)
+        bottom_camera = BottomCamera(vision_state, bottom_cam_id=bottom_cam_id)
         bottom_camera.start()
 
     if "grpc" not in no:

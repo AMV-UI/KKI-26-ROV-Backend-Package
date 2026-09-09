@@ -1,12 +1,14 @@
-import os
 import logging
-from logging.handlers import QueueHandler, QueueListener
+import os
 import queue
+from logging.handlers import QueueHandler, QueueListener
 
 
 def setup_logging():
     """Sets up the asynchronous logging architecture."""
     log_queue = queue.Queue()
+
+    os.remove("rov_mixer.log")
 
     # --- Console Handler (INFO only) ---
     console_handler = logging.StreamHandler()

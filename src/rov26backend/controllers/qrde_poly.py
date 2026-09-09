@@ -5,8 +5,8 @@ import threading
 import cv2
 import numpy as np
 from qrdet import QRDetector
-from rov26backend.controllers.polygon_debouncer import QRDebouncer
 
+from rov26backend.controllers.polygon_debouncer import QRDebouncer
 from rov26backend.models.polygon_state import PolygonState
 
 logger = logging.getLogger("ROV.mixer")
@@ -32,7 +32,7 @@ class QRPolygonFinder:
             self._thread.join()
 
     def run(self):
-        self.detector = QRDetector(model_size="s", conf_th=0.5)
+        self.detector = QRDetector(model_size="m", conf_th=0.5)
 
         while self._is_running.is_set():
             try:
