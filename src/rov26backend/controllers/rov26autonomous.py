@@ -87,31 +87,9 @@ class Rov26Autonomous:
             self._thread = None
         logger.info("Autonomous manager thread fully stopped.")
 
-    def descend_until_qr_found(self):
-        logger.info(
-            "Autonomous Phase 1: Commencing vertical descent looking for QR Target..."
-        )
-        while self._is_running.is_set() and self.auto_event.is_set():
-            latest_vision_state = self.vision_state.get_latest()
-            tvec = latest_vision_state.tvec
-
-            logger.debug("Descent Loop")
-
-            with self.control_state as control:
-                if tvec[0] != 0 or tvec[1] != 0 or tvec[2] != 0:
-                    control.vertical = 1500
-                    logger.info("Target locked! QR marker detected")
-                    break
-                else:
-                    control.vertical = 1450
-            time.sleep(0.01)
-
-
     def auto_opt_1(self):
-        logger.info(
-            "Autonomous Phase 3: Taking the pay load off the hook."
-        )
-        #mundur 3 detik
+        logger.info("Autonomous Phase 3: Taking the pay load off the hook.")
+        # mundur 3 detik
         logger.info("Phase 3.1: Reversing away from the pipe.")
         with self.control_state as control:
             control.forward = 1450
@@ -120,7 +98,7 @@ class Rov26Autonomous:
             control.yaw = 1500
         time.sleep(3)
 
-        #stop bentar
+        # stop bentar
         logger.info("Phase 3.2: Stabilizing after reversing.")
         with self.control_state as control:
             control.forward = 1500
@@ -129,7 +107,7 @@ class Rov26Autonomous:
             control.yaw = 1500
         time.sleep(0.5)
 
-        #naik .. detik
+        # naik .. detik
         logger.info("Phase 3.3: Ascending to release the payload.")
         with self.control_state as control:
             control.forward = 1500
@@ -138,7 +116,7 @@ class Rov26Autonomous:
             control.yaw = 1500
         time.sleep(6)
 
-        #Stop and stabilize
+        # Stop and stabilize
         logger.info("Phase 3.4: Payload release maneuver complete.")
         with self.control_state as control:
             control.forward = 1500
@@ -146,12 +124,9 @@ class Rov26Autonomous:
             control.vertical = 1500
             control.yaw = 1500
 
-    
     def auto_opt_2(self):
-        logger.info(
-            "Autonomous Phase 3: Taking the pay load off the hook."
-        )
-        #mundur 3 detik sampe mentok ke ujung pipe
+        logger.info("Autonomous Phase 3: Taking the pay load off the hook.")
+        # mundur 3 detik sampe mentok ke ujung pipe
         logger.info("Phase 3.1: Reversing away from the pipe.")
         with self.control_state as control:
             control.forward = 1450
@@ -161,8 +136,8 @@ class Rov26Autonomous:
         time.sleep(3)
 
         for i in range(3):
-            #naik 2 detik
-            logger.info(f"Phase 3.{i+2}: Ascending to release the payload.")
+            # naik 2 detik
+            logger.info(f"Phase 3.{i + 2}: Ascending to release the payload.")
             with self.control_state as control:
                 control.forward = 1500
                 control.lateral = 1500
@@ -170,8 +145,8 @@ class Rov26Autonomous:
                 control.yaw = 1500
             time.sleep(2)
 
-            #mundur 2 detik
-            logger.info(f"Phase 3.{i+3}: Reversing to release the payload.")
+            # mundur 2 detik
+            logger.info(f"Phase 3.{i + 3}: Reversing to release the payload.")
             with self.control_state as control:
                 control.forward = 1450
                 control.lateral = 1500
@@ -179,7 +154,7 @@ class Rov26Autonomous:
                 control.yaw = 1500
             time.sleep(2)
 
-        #naik terakhir kali
+        # naik terakhir kali
         logger.info("Phase 3.8: Final ascending to release the payload.")
         with self.control_state as control:
             control.forward = 1500
@@ -187,8 +162,6 @@ class Rov26Autonomous:
             control.vertical = 1550
             control.yaw = 1500
         time.sleep(5)
-        
-
 
     def run(self):
         logger.info("Autonomous execution thread processing loops active.")
@@ -234,8 +207,8 @@ class Rov26Autonomous:
                         break
                     time.sleep(0.01)
 
-                #self.auto_opt_1()
-                #self.auto_opt_2()
+                # self.auto_opt_1()
+                # self.auto_opt_2()
 
                 self.auto_event.clear()
                 logger.info(

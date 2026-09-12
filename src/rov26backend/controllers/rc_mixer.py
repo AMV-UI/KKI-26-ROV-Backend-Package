@@ -18,7 +18,7 @@ class ROV26RcMixer:
         auto_event: threading.Event,
         **kwargs,
     ):
-        self.smoothing_factor = kwargs.get("smoothing_factor") or 0.025
+        self.smoothing_factor = kwargs.get("smoothing_factor") or 1
         self.servo_open = kwargs.get("servo_open") or 1880
         self.servo_close = kwargs.get("servo_close") or 2390
         self.servo_target = self.servo_open

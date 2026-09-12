@@ -6,7 +6,7 @@ from typing import Any
 
 @dataclass
 class PolygonState:
-    qr_polygon = None
+    qr_polygon = (None, (480, 640, 3))
 
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.

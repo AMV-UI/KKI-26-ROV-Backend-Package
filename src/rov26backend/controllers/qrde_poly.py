@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 from qrdet import QRDetector
 
-from rov26backend.controllers.polygon_debouncer import QRDebouncer
 from rov26backend.models.polygon_state import PolygonState
 
 logger = logging.getLogger("ROV.mixer")
@@ -18,7 +17,6 @@ class QRPolygonFinder:
         self.polygon_state = polygon_state
         self._thread = None
         self._is_running = threading.Event()
-        self.debouncer = QRDebouncer()
 
     def start(self):
         if self._thread is None:
@@ -32,7 +30,7 @@ class QRPolygonFinder:
             self._thread.join()
 
     def run(self):
-        self.detector = QRDetector(model_size="m", conf_th=0.5)
+        self.detector = QRDetector(model_size="s", conf_th=0.5)
 
         while self._is_running.is_set():
             try:
@@ -50,19 +48,12 @@ class QRPolygonFinder:
                 if len(new_corners) > 0:
                     # Extract the first polygon and flatten it from (4, 1, 2) to (4, 2)
                     poly = new_corners[0].reshape(-1, 2)
-                    smoothed_corners = self.debouncer.update(poly, frame.shape)
-
                     with self.polygon_state as polygon:
-                        # Wrap back in a list for downstream cv2.polylines compatibility
-                        polygon.qr_polygon = (
-                            [smoothed_corners] if smoothed_corners is not None else []
-                        )
+                        polygon.qr_polygon = (poly, frame.shape)
                 else:
                     # Explicitly pass None so the debouncer registers a missing frame
-                    smoothed_corners = self.debouncer.update(None, frame.shape)
-
                     with self.polygon_state as polygon:
-                        polygon.qr_polygon = []
+                        polygon.qr_polygon = (None, frame.shape)
 
             except queue.Empty:
                 continue

@@ -9,7 +9,9 @@ import numpy as np
 from pyzbar.pyzbar import decode
 
 from rov26backend.controllers.base_camera_controller import BaseCamera
+from rov26backend.controllers.polygon_debouncer import QRDebouncer
 from rov26backend.controllers.solvePnP import solvePnP
+from rov26backend.models.polygon_state import PolygonState
 from rov26backend.models.vision_state import VisionState
 
 logger = logging.getLogger("ROV.cam")
@@ -21,12 +23,12 @@ class FrontCamera(BaseCamera):
         vision_state: VisionState,
         auto_event: threading.Event,
         frame_queue,
-        polygon_state,
+        polygon_state: PolygonState,
         **kwargs,
     ):
         default_cam_id = (
-            # "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
-            "046d_C270_HD_WEBCAM_55E22480"
+            "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
+            # "046d_C270_HD_WEBCAM_55E22480"
             if sys.platform == "linux"
             else "7&2C094952&0&0000"
         )
@@ -40,7 +42,7 @@ class FrontCamera(BaseCamera):
         self.frame_queue = frame_queue
         self.polygon_state = polygon_state
         self.pnp_solver = solvePnP(vision_state)
-        # self.qr_polygon_finder = QRPolygonFinder()
+        self.qrbouncer = QRDebouncer()
 
         self.qr_text = "NOT_FOUND"
         self.last_qr_read = time.time()
@@ -67,10 +69,6 @@ class FrontCamera(BaseCamera):
             self.frame_queue.get()
             self.frame_queue.put_nowait(frame)
 
-        # 2. Retrieve the latest polygon state
-        current_poly_state = self.polygon_state.get_latest()
-        raw_polygon = current_poly_state.qr_polygon
-
         if time.time() - self.last_qr_read > 0.5:
             decoded_objects = decode(frame)
             if decoded_objects:
@@ -83,18 +81,21 @@ class FrontCamera(BaseCamera):
                 self.qr_text = "NOT_FOUND"
             self.last_qr_read = time.time()
 
+        ai_poly, poly_shape = self.polygon_state.get_latest().qr_polygon
+
         # 2. Ambil polygon QR yang SUDAH di-update oleh AI Worker dari VisionState
         with self.vision_state as vision_state:
             vision_state.qr_side = self.qr_text
-            points = vision_state.qr_polygon  # List koordinat hasil AI + Debouncer
+
+            logger.info(f"ai_poly: {ai_poly} | poly_shape: {poly_shape}")
+            raw_polygon = self.qrbouncer.update(ai_poly, poly_shape)
 
             # Safely handle both None and []
             if raw_polygon:
+                logger.info("BEFORE RAW")
                 actual_poly = raw_polygon[0]  # Extract the (4, 2) array
                 points = [(float(pt[0]), float(pt[1])) for pt in actual_poly]
-                vision_state.qr_polygon = points
-            else:
-                vision_state.qr_polygon = []
+                logger.info("AFTER RAW")
 
         if not raw_polygon:
             self.pnp_solver.process([])
@@ -140,6 +141,6 @@ class FrontCamera(BaseCamera):
 
     def stop(self):
         self.is_running = False
-        if hasattr(self, 'ai_worker'):
+        if hasattr(self, "ai_worker"):
             self.ai_worker.stop()
         super().stop()
