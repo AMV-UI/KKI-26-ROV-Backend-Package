@@ -8,7 +8,10 @@ def setup_logging():
     """Sets up the asynchronous logging architecture."""
     log_queue = queue.Queue()
 
-    os.remove("rov_mixer.log")
+    try:
+        os.remove("rov_mixer.log")
+    except Exception:
+        pass
 
     # --- Console Handler (INFO only) ---
     console_handler = logging.StreamHandler()
