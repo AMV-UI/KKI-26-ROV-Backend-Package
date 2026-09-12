@@ -46,9 +46,19 @@ class FrontCamera(BaseCamera):
         self.last_qr_read = time.time()
 
     def update_frame(self, frame):
-        """Memasukkan frame terbaru dari camera capture thread secara safe."""
+        """Memasukkan frame terbaru secara thread-safe dan kirim ke AI Queue."""
+        if frame is None:
+            return
+
         with self.frame_lock:
-            self.latest_frame = frame.copy() if frame is not None else None
+            self.latest_frame = frame.copy()
+
+        # Masukkan frame terbaru ke Queue AI secara non-blocking
+        try:
+            self.ai_frame_queue.get_nowait()  # Buang frame lama jika AI masih sibuk
+        except queue.Empty:
+            pass
+        self.ai_frame_queue.put(frame.copy())
 
     def process_and_publish(self, frame):
         try:
@@ -73,8 +83,10 @@ class FrontCamera(BaseCamera):
                 self.qr_text = "NOT_FOUND"
             self.last_qr_read = time.time()
 
+        # 2. Ambil polygon QR yang SUDAH di-update oleh AI Worker dari VisionState
         with self.vision_state as vision_state:
             vision_state.qr_side = self.qr_text
+            points = vision_state.qr_polygon  # List koordinat hasil AI + Debouncer
 
             # Safely handle both None and []
             if raw_polygon:
@@ -125,3 +137,9 @@ class FrontCamera(BaseCamera):
                 (0, 255, 0),
                 2,
             )
+
+    def stop(self):
+        self.is_running = False
+        if hasattr(self, 'ai_worker'):
+            self.ai_worker.stop()
+        super().stop()
