@@ -6,7 +6,7 @@ import threading
 import time
 from enum import Enum
 
-from rov26backend.models.button import PressButton
+from rov26backend.models.button import PressButton, PressButtonTarget
 from rov26backend.models.control_state import ControlState
 from rov26backend.models.input_state import InputState
 from rov26backend.models.simul_press_button import SimulPressButton
@@ -98,6 +98,8 @@ class ROV26RcMixer:
         self.stabilize_btn = PressButton()
         self.autonomous_btn = PressButton()
         self.arm_btn = SimulPressButton()
+        self.manual_tune_btn = PressButtonTarget(-1)
+        self.auto_tune_btn = PressButtonTarget(1)
 
         self.input_state = input_state
         self.control_state = control_state
@@ -246,6 +248,11 @@ class ROV26RcMixer:
                 control.target_mode = "ALT_HOLD"
             elif self.autonomous_btn.toggle(inputs.btn_up):
                 control.target_mode = "AUTO"
+
+            if self.manual_btn(inputs.dpad_hor):
+                self._set_tune_manual()
+            elif self.auto_tune_btn(inputs.dpad_hor):
+                self._set_tune_auto()
 
             if self.arm_btn.toggle(inputs.lb, inputs.rb):
                 control.arm_toggle = True
