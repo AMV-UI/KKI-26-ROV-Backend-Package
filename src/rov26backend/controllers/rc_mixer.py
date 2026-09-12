@@ -120,10 +120,6 @@ class ROV26RcMixer:
         self._is_running.clear()
         if self._thread:
             self._thread.join()
-        if self.manual_tune_file:
-            self.manual_tune_file.close()
-        if self.auto_tune_file:
-            self.auto_tune_file.close()
 
     def _set_tune_manual(self):
         manual_config = self._load_config(self.manual_tune_file_name)
@@ -152,7 +148,7 @@ class ROV26RcMixer:
         # Add Global parameter defaults
         defaults["GLOBAL"] = {p[0]: 0.0 for p in GLOBAL_PARAMS_CONFIG}
 
-        if os.path.exists():
+        if os.path.exists(SAVE_FILE):
             try:
                 with open(SAVE_FILE, "r") as f:
                     data = json.load(f)
@@ -249,9 +245,9 @@ class ROV26RcMixer:
             elif self.autonomous_btn.toggle(inputs.btn_up):
                 control.target_mode = "AUTO"
 
-            if self.manual_btn(inputs.dpad_hor):
+            if self.manual_btn.toggle(inputs.dpad_hor):
                 self._set_tune_manual()
-            elif self.auto_tune_btn(inputs.dpad_hor):
+            elif self.auto_tune_btn.toggle(inputs.dpad_hor):
                 self._set_tune_auto()
 
             if self.arm_btn.toggle(inputs.lb, inputs.rb):

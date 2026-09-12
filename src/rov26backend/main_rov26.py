@@ -197,8 +197,6 @@ def rov(
         tuner = LivePWMOverlayTuner(mikon_param_queue)
         tuner.start()
 
-    auto_event.set()
-
     logger.info("Main script active. Press Ctrl+C to stop.")
 
     try:
