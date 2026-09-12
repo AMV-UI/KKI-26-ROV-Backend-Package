@@ -64,6 +64,8 @@ class PxnP5JoystickLinux:
                             input_state.lb = event.state == 1
                         elif event.code == "ABS_HAT0Y":
                             input_state.dpad_vert = event.state
+                        elif event.code == "ABS_HAT0x":
+                            input_state.dpad_hor = event.state
                         elif event.code == "BTN_NORTH":
                             input_state.btn_left = event.state
                         elif event.code == "BTN_SOUTH":

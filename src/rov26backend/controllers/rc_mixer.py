@@ -1,6 +1,10 @@
+import json
 import logging
+import os
+import queue
 import threading
 import time
+from enum import Enum
 
 from rov26backend.models.button import PressButton
 from rov26backend.models.control_state import ControlState
@@ -9,12 +13,49 @@ from rov26backend.models.simul_press_button import SimulPressButton
 
 logger = logging.getLogger("ROV.mixer")
 
+# bullshit pain
+MOTOR_COORDS = {
+    1: ("right", 100),  # Top Right
+    2: ("left", 100),  # Top Left
+    5: ("right", 380),  # Mid Right
+    6: ("left", 380),  # Mid Left
+    3: ("right", 660),  # Bottom Right
+    4: ("left", 660),  # Bottom Left
+}
+
+# Per-motor parameters
+PARAMS_CONFIG = [
+    ("MIN", 1000, 1500, 1, int),
+    ("MAX", 1500, 2000, 1, int),
+    ("THROTTLE", -100.0, 100.0, 0.01, float),
+    ("YAW", -1000.0, 200.0, 0.01, float),
+    ("FORWARD", -100.0, 100.0, 0.01, float),
+    ("LATERAL", -100.0, 100.0, 0.01, float),
+    ("ROLL", -100.0, 100.0, 0.01, float),
+    ("PITCH", -100.0, 100.0, 0.01, float),
+]
+
+# Global PID parameters
+GLOBAL_PARAMS_CONFIG = [
+    ("ATC_RAT_YAW_P", 0.0, 1.0, 0.01, float),
+    ("ATC_RAT_YAW_I", 0.0, 0.1, 0.001, float),
+    ("ATC_RAT_YAW_D", 0.0, 0.05, 0.001, float),
+    ("ATC_ANG_YAW_P", 0.0, 10.0, 0.1, float),
+]
+# =================================================
+
+
+class TuneMode(Enum):
+    MANUAL = 1
+    AUTO = 2
+
 
 class ROV26RcMixer:
     def __init__(
         self,
         input_state: InputState,
         control_state: ControlState,
+        param_queue: queue.Queue,
         auto_event: threading.Event,
         **kwargs,
     ):
@@ -49,6 +90,9 @@ class ROV26RcMixer:
         self.target_mode = None
         self.arm_toggle = False
 
+        self.manual_tune_file_name = "pwm_manual.json"
+        self.auto_tune_file_name = "pwm_auto.json"
+
         self.depth_hold_btn = PressButton()
         self.manual_btn = PressButton()
         self.stabilize_btn = PressButton()
@@ -57,6 +101,7 @@ class ROV26RcMixer:
 
         self.input_state = input_state
         self.control_state = control_state
+        self.param_queue = param_queue
 
         self._thread = None
         self._is_running = threading.Event()
@@ -67,10 +112,61 @@ class ROV26RcMixer:
             self._thread = threading.Thread(target=self.stream_rc, daemon=True)
             self._thread.start()
 
+        self._set_tune_manual()
+
     def stop(self):
         self._is_running.clear()
         if self._thread:
             self._thread.join()
+        if self.manual_tune_file:
+            self.manual_tune_file.close()
+        if self.auto_tune_file:
+            self.auto_tune_file.close()
+
+    def _set_tune_manual(self):
+        manual_config = self._load_config(self.manual_tune_file_name)
+        self._dump2queue(manual_config)
+
+    def _set_tune_auto(self):
+        manual_config = self._load_config(self.auto_tune_file_name)
+        self._dump2queue(manual_config)
+
+    def _dump2queue(self, book):
+        for group_id, limits in book.items():
+            for param_name, val in limits.items():
+                if group_id == "GLOBAL":
+                    param_id = param_name
+                else:
+                    param_id = f"MOT_{group_id}_{param_name}"
+
+                self.param_queue.put((param_id, val))
+
+    def _load_config(self, SAVE_FILE):
+        defaults = {
+            m: {p[0]: (1500 if p[4] == int else 0.0) for p in PARAMS_CONFIG}
+            for m in MOTOR_COORDS
+        }
+
+        # Add Global parameter defaults
+        defaults["GLOBAL"] = {p[0]: 0.0 for p in GLOBAL_PARAMS_CONFIG}
+
+        if os.path.exists():
+            try:
+                with open(SAVE_FILE, "r") as f:
+                    data = json.load(f)
+                    for k, v in data.items():
+                        if k == "GLOBAL":
+                            defaults["GLOBAL"].update(v)
+                        else:
+                            try:
+                                motor_id = int(k)
+                                if motor_id in defaults:
+                                    defaults[motor_id].update(v)
+                            except ValueError:
+                                pass  # Ignore invalid keys
+            except Exception as e:
+                logger.error(f"Warning: Failed to load {SAVE_FILE}: {e}")
+        return defaults
 
     def stream_rc(self):
         while self._is_running.is_set():

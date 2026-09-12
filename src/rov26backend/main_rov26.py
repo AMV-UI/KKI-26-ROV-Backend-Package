@@ -88,7 +88,6 @@ def rov(
     depth_state = DepthState()
 
     mikon_param_queue = queue.Queue(maxsize=60)
-    frame_queue = queue.Queue(maxsize=1)
 
     polygon_state = PolygonState()
     frame_queue = queue.Queue(maxsize=1)
@@ -126,6 +125,7 @@ def rov(
         rc_mixer = ROV26RcMixer(
             input_state,
             control_state,
+            mikon_param_queue,
             auto_event,
             smoothing_factor=smoothing_factor,
             servo_open=servo_open,
@@ -197,7 +197,7 @@ def rov(
         tuner = LivePWMOverlayTuner(mikon_param_queue)
         tuner.start()
 
-    # auto_event.set()
+    auto_event.set()
 
     logger.info("Main script active. Press Ctrl+C to stop.")
 

@@ -87,21 +87,17 @@ class FrontCamera(BaseCamera):
         with self.vision_state as vision_state:
             vision_state.qr_side = self.qr_text
 
-            logger.info(f"ai_poly: {ai_poly} | poly_shape: {poly_shape}")
             raw_polygon = self.qrbouncer.update(ai_poly, poly_shape)
 
-            # Safely handle both None and []
-            if raw_polygon:
-                logger.info("BEFORE RAW")
-                actual_poly = raw_polygon[0]  # Extract the (4, 2) array
+            if raw_polygon is not None:
+                actual_poly = raw_polygon
                 points = [(float(pt[0]), float(pt[1])) for pt in actual_poly]
-                logger.info("AFTER RAW")
 
-        if not raw_polygon:
+        if raw_polygon is None:
             self.pnp_solver.process([])
             return
 
-        actual_poly = raw_polygon[0]
+        actual_poly = raw_polygon
 
         # 1. Cast the array to int32 for OpenCV drawing functions
         actual_poly_int = np.int32(actual_poly)

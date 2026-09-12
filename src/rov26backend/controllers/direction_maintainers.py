@@ -119,11 +119,6 @@ class ForwardMaintainer(DirectionMaintainer):
             else:
                 control.forward = 1500
 
-            if self.vertical_maintainer:
-                vert_current = self.vertical_maintainer.get_current()
-                vert_output = self.vertical_maintainer.pid(vert_current)
-                control.vertical = int(1500 + vert_output)
-
     def get_current(self):
         return self.vision_state.get_latest().tvec[2]
 
@@ -157,11 +152,6 @@ class LateralMaintainer(DirectionMaintainer):
                 control.lateral = int(value)
             else:
                 control.lateral = 1500
-
-            if self.vertical_maintainer:
-                vert_current = self.vertical_maintainer.get_current()
-                vert_output = self.vertical_maintainer.pid(vert_current)
-                control.vertical = int(1500 + vert_output)
 
     def get_current(self):
         return self.vision_state.get_latest().tvec[0]

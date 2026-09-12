@@ -30,7 +30,7 @@ class QRPolygonFinder:
             self._thread.join()
 
     def run(self):
-        self.detector = QRDetector(model_size="s", conf_th=0.5)
+        self.detector = QRDetector(model_size="n", conf_th=0.5)
 
         while self._is_running.is_set():
             try:

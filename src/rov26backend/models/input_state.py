@@ -1,7 +1,7 @@
+import copy
 import threading
 from dataclasses import dataclass
 from typing import Any
-import copy
 
 
 @dataclass
@@ -19,6 +19,7 @@ class InputState:
     btn_left: bool = False
     btn_down: bool = False
     dpad_vert: int = 0
+    dpad_hor: int = 0
 
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.

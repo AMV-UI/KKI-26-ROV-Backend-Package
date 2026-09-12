@@ -49,6 +49,7 @@ class QRDebouncer:
                 self.current_streak = 0
                 self.is_confirmed = False
                 self.tracking_polygon = None
+                self.persistent_polygon = None
 
         if self.persistent_polygon is not None:
             clamped_polygon = np.copy(self.persistent_polygon)
