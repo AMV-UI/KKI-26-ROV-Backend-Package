@@ -87,64 +87,6 @@ class Rov26Autonomous:
             self._thread = None
         logger.info("Autonomous manager thread fully stopped.")
 
-    #otw
-    #def target_depth(self):
-
-    def forward_and_grip(self):
-        logger.info(
-            "Autonomous Phase 2: Approaching payload and engaging gripper."
-        )
-
-        GRIP_DISTANCE = 15.0  # cm, sesuaikan dengan posisi ideal gripper
-
-        while self._is_running.is_set() and self.auto_event.is_set():
-            latest_vision_state = self.vision_state.get_latest()
-            tvec = latest_vision_state.tvec
-
-            # QR tidak terdeteksi
-            if tvec[0] == 0 and tvec[1] == 0 and tvec[2] == 0:
-                with self.control_state as control:
-                    control.forward = 1500
-
-                logger.warning("Target lost! QR marker not detected.")
-                time.sleep(0.05)
-                continue
-
-            x, y, z = tvec[0], tvec[1], tvec[2]
-            logger.info(
-                f"Payload detected | "
-                f"x={x:.2f} cm, "
-                f"y={y:.2f} cm, "
-                f"z={z:.2f} cm"
-            )
-
-            # Masih terlalu jauh -> maju
-            if z > GRIP_DISTANCE:
-                with self.control_state as control:
-                    control.forward = 1600
-            # Sudah cukup dekat -> berhenti lalu grip
-            else:
-                logger.info(
-                    f"Grip distance reached: {z:.2f} cm. Stopping ROV."
-                )
-
-                with self.control_state as control:
-                    control.forward = 1500
-
-                time.sleep(0.5)
-
-                with self.control_state as control:
-                    control.servo = 1800
-
-                logger.info("Payload grip engaged.")
-                break
-
-            time.sleep(0.05)
-
-        # Pastikan forward berhenti
-        with self.control_state as control:
-            control.forward = 1500
-
     def auto_opt_1(self):
         logger.info("Autonomous Phase 3: Taking the pay load off the hook.")
         # mundur 3 detik
@@ -165,7 +107,7 @@ class Rov26Autonomous:
             control.yaw = 1500
         time.sleep(0.5)
 
-        # naik 6 detik
+        # naik .. detik
         logger.info("Phase 3.3: Ascending to release the payload.")
         with self.control_state as control:
             control.forward = 1500
@@ -221,14 +163,12 @@ class Rov26Autonomous:
             control.yaw = 1500
         time.sleep(5)
 
-
     def run(self):
         logger.info("Autonomous execution thread processing loops active.")
         while self._is_running.is_set():
             if self.auto_event.is_set():
                 logger.info("Autonomous sequence triggered via auto_event flag.")
 
-                #mundur
                 with self.control_state as control:
                     control.forward = 1425
 
@@ -242,10 +182,6 @@ class Rov26Autonomous:
                 with self.control_state as control:
                     control.target_mode = "ALT_HOLD"
 
-                #descending to target depth
-                #self.target_depth()
-
-                #Ini buat apa dah masih bingung
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
                 )
@@ -271,8 +207,8 @@ class Rov26Autonomous:
                         break
                     time.sleep(0.01)
 
-                self.forward_and_grip()
-                self.auto_opt_1()
+                # self.auto_opt_1()
+                # self.auto_opt_2()
 
                 self.auto_event.clear()
                 logger.info(
