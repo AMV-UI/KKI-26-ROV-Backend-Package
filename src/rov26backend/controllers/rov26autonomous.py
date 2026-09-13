@@ -88,31 +88,26 @@ class Rov26Autonomous:
             self._thread = None
         logger.info("Autonomous manager thread fully stopped.")
 
-
-    #otw
+    # otw
     def target_depth(self):
         recorded_depth = self.depth_state.get_latest().recorded_depth
         if recorded_depth is not None:
-            self.vertical_maintainer.pid.target = recorded_depth
-            self.vertical_maintainer.target = recorded_depth
+            self.vertical_maintainer.pid.setpoint = recorded_depth
 
             logger.info(
                 f"Autonomous Phase 1: Descending to recorded depth of {recorded_depth:.2f} m."
             )
             with self.control_state as control:
                 control.target_mode = "ALT_HOLD"
-            return True 
+            return True
 
         logger.info("No recorded depth available.")
         return False
 
-
     def forward_and_grip(self):
-        logger.info(
-            "Autonomous Phase 2: Approaching payload and engaging gripper."
-        )
+        logger.info("Autonomous Phase 2: Approaching payload and engaging gripper.")
 
-        GRIP_DISTANCE = 15.1    # cm, sesuaikan dengan posisi ideal gripper
+        GRIP_DISTANCE = 15.1  # cm, sesuaikan dengan posisi ideal gripper
 
         while self._is_running.is_set() and self.auto_event.is_set():
             latest_vision_state = self.vision_state.get_latest()
@@ -128,12 +123,7 @@ class Rov26Autonomous:
                 continue
 
             x, y, z = tvec[0], tvec[1], tvec[2]
-            logger.info(
-                f"Payload detected | "
-                f"x={x:.2f} cm, "
-                f"y={y:.2f} cm, "
-                f"z={z:.2f} cm"
-            )
+            logger.info(f"Payload detected | x={x:.2f} cm, y={y:.2f} cm, z={z:.2f} cm")
 
             # Masih terlalu jauh -> maju
             if z > GRIP_DISTANCE:
@@ -141,9 +131,7 @@ class Rov26Autonomous:
                     control.forward = 1600
             # Sudah cukup dekat -> berhenti lalu grip
             else:
-                logger.info(
-                    f"Grip distance reached: {z:.2f} cm. Stopping ROV."
-                )
+                logger.info(f"Grip distance reached: {z:.2f} cm. Stopping ROV.")
 
                 with self.control_state as control:
                     control.forward = 1500
@@ -158,7 +146,6 @@ class Rov26Autonomous:
         # Pastikan forward berhenti
         with self.control_state as control:
             control.forward = 1500
-
 
     def auto_opt_1(self):
         logger.info("Autonomous Phase 3: Taking the pay load off the hook.")
@@ -236,14 +223,13 @@ class Rov26Autonomous:
             control.yaw = 1500
         time.sleep(5)
 
-
     def run(self):
         logger.info("Autonomous execution thread processing loops active.")
         while self._is_running.is_set():
             if self.auto_event.is_set():
                 logger.info("Autonomous sequence triggered via auto_event flag.")
 
-                #mundur
+                # mundur
                 with self.control_state as control:
                     control.forward = 1425
                 time.sleep(6)
@@ -252,16 +238,13 @@ class Rov26Autonomous:
 
                 # gunakan depth yang direkam saat manual
                 if not self.target_depth():
-                    logger.warning(
-                        "No recorded depth. Aborting autonomous sequence."
-                    )
+                    logger.warning("No recorded depth. Aborting autonomous sequence.")
                     self.auto_event.clear()
                     continue
 
                 self.vertical_maintainer.control_until_timeout(6)
 
-
-                #Ini buat apa dah masih bingung
+                # Ini buat apa dah masih bingung
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
                 )
