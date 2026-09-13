@@ -6,6 +6,7 @@ import threading
 import time
 from enum import Enum
 
+from rov26backend.controllers.keyboardshit import ControlRecorder, SharedKeyboardState
 from rov26backend.models.button import PressButton, PressButtonTarget
 from rov26backend.models.control_state import ControlState
 from rov26backend.models.input_state import InputState
@@ -57,6 +58,7 @@ class ROV26RcMixer:
         control_state: ControlState,
         param_queue: queue.Queue,
         auto_event: threading.Event,
+        keyboard_state: SharedKeyboardState,
         **kwargs,
     ):
         self.smoothing_factor = kwargs.get("smoothing_factor") or 1
@@ -100,10 +102,15 @@ class ROV26RcMixer:
         self.arm_btn = SimulPressButton()
         self.manual_tune_btn = PressButtonTarget(-1)
         self.auto_tune_btn = PressButtonTarget(1)
+        self.record_btn = PressButton()
+        self.playback_btn = PressButton()
 
         self.input_state = input_state
         self.control_state = control_state
+        self.keyboard_state = keyboard_state
         self.param_queue = param_queue
+
+        self.control_recorder = ControlRecorder()
 
         self._thread = None
         self._is_running = threading.Event()
@@ -169,6 +176,7 @@ class ROV26RcMixer:
     def stream_rc(self):
         while self._is_running.is_set():
             self.update_control_from_inputs()
+
             time.sleep(0.02)
 
     def _update_poll_auto_stop(self, inputs):
@@ -207,6 +215,13 @@ class ROV26RcMixer:
                 )
                 control.vertical = int(self.current_vertical)
                 control.yaw = int(self.current_yaw)
+
+            if self.record_btn.toggle(self.keyboard_state.get_key() == "r"):
+                self.control_recorder.toggle_record()
+            elif self.playback_btn.toggle(self.keyboard_state.get_key() == "p"):
+                self.control_recorder.toggle_playback()
+
+            self.control_recorder.process_data(self.control_state)
 
     def _update_servo_inputs(self, inputs: InputState):
         if inputs.dpad_vert == 1:

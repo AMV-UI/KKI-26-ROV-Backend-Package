@@ -25,8 +25,11 @@ import logging
 import time
 from typing import Annotated
 
+from pynput import keyboard
+
 from rov26backend.config import log_listener
 from rov26backend.controllers.dummy_mikon import DummyPixhawk
+from rov26backend.controllers.keyboardshit import SharedKeyboardState
 from rov26backend.controllers.px4_controller import PixhawkController
 from rov26backend.controllers.qrde_poly import QRPolygonFinder
 from rov26backend.controllers.rc_mixer import ROV26RcMixer
@@ -85,6 +88,7 @@ def rov(
     control_state = ControlState()
     telemetry_state = TelemetryState()
     vision_state = VisionState()
+    keyboard_state = SharedKeyboardState()
     depth_state = DepthState()
 
     mikon_param_queue = queue.Queue(maxsize=60)
@@ -127,6 +131,7 @@ def rov(
             control_state,
             mikon_param_queue,
             auto_event,
+            keyboard_state,
             smoothing_factor=smoothing_factor,
             servo_open=servo_open,
             servo_close=servo_close,
@@ -197,6 +202,18 @@ def rov(
         tuner = LivePWMOverlayTuner(mikon_param_queue)
         tuner.start()
 
+    def on_press(key, state):
+        state.set_key(key)
+
+    def on_release(key, state):
+        state.clear_key_on_release(key)
+
+    keyboard_listener = keyboard.Listener(
+        on_press=lambda k: on_press(k, keyboard_state),
+        on_release=lambda k: on_release(k, keyboard_state),
+    )
+    keyboard_listener.start()
+
     logger.info("Main script active. Press Ctrl+C to stop.")
 
     try:
@@ -223,6 +240,9 @@ def rov(
             tuner.stop()
         if qr_finder:
             qr_finder.stop()
+
+        keyboard_listener.stop()
+        keyboard_listener.join()
 
         logger.info("Waiting for threads to exit...")
         logger.info("All threads stopped. Goodbye.")
