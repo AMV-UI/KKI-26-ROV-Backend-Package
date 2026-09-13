@@ -11,6 +11,7 @@ from rov26backend.models.button import PressButton, PressButtonTarget
 from rov26backend.models.control_state import ControlState
 from rov26backend.models.input_state import InputState
 from rov26backend.models.simul_press_button import SimulPressButton
+from rov26backend.models.depth_state import DepthState
 
 logger = logging.getLogger("ROV.mixer")
 
@@ -59,6 +60,7 @@ class ROV26RcMixer:
         param_queue: queue.Queue,
         auto_event: threading.Event,
         keyboard_state: SharedKeyboardState,
+        depth_state: DepthState,    
         **kwargs,
     ):
         self.smoothing_factor = kwargs.get("smoothing_factor") or 1
@@ -104,10 +106,12 @@ class ROV26RcMixer:
         self.auto_tune_btn = PressButtonTarget(1)
         self.record_btn = PressButton()
         self.playback_btn = PressButton()
+        self.recorded_depth_btn = PressButton()
 
         self.input_state = input_state
         self.control_state = control_state
         self.keyboard_state = keyboard_state
+        self.depth_state = depth_state
         self.param_queue = param_queue
 
         self.control_recorder = ControlRecorder()
@@ -189,6 +193,14 @@ class ROV26RcMixer:
             self._update_motor_inputs(inputs)
             self._update_mode_inputs(inputs)
             self._update_servo_inputs(inputs)
+        
+            if self.recorded_depth_btn.toggle(inputs.recorded_depth):
+                with self.depth_state as depth_state:
+                    depth_state.recorded_depth = depth_state.depth
+
+                    logger.info(
+                        f"Depth recorded: {depth_state.recorded_depth:.3f} m"
+                    )
             # self._update_servo_inputs_analog(inputs)
 
         if self.auto_event.is_set():

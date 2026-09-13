@@ -70,6 +70,7 @@ class PxnP5JoystickWindows:
 
                     input_state.rb = buttons.get("RIGHT_SHOULDER", False)
                     input_state.lb = buttons.get("LEFT_SHOULDER", False)
+                    input_state.recorded_depth = buttons.get("BACK", False)
 
                     if buttons.get("DPAD_UP"):
                         input_state.dpad_vert = 1
