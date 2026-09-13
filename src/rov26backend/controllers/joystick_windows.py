@@ -1,6 +1,7 @@
-import threading
 import logging
+import threading
 import time
+
 import XInput
 
 from rov26backend.models.input_state import InputState
@@ -78,6 +79,13 @@ class PxnP5JoystickWindows:
                         input_state.dpad_vert = -1
                     else:
                         input_state.dpad_vert = 0
+
+                    if buttons.get("DPAD_RIGHT"):
+                        input_state.dpad_hor = 1
+                    elif buttons.get("DPAD_LEFT"):
+                        input_state.dpad_hor = -1
+                    else:
+                        input_state.dpad_hor = 0
 
                     input_state.btn_down = buttons.get("A", False)
                     input_state.btn_right = buttons.get("B", False)
