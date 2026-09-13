@@ -185,7 +185,7 @@ class ROV26RcMixer:
 
     def update_control_from_inputs(self):
         inputs = self.input_state.get_latest()
-        if not self.auto_event.is_set():
+        if not self.auto_event.is_set() and not self.control_recorder.is_playing:
             self._update_motor_inputs(inputs)
             self._update_mode_inputs(inputs)
             self._update_servo_inputs(inputs)
@@ -207,7 +207,7 @@ class ROV26RcMixer:
             self.current_lateral - 1500
         )
 
-        if not self.auto_event.is_set():
+        if not self.auto_event.is_set() and not self.control_recorder.is_playing:
             with self.control_state as control:
                 control.forward = int(self.current_forward if is_fwd_stronger else 1500)
                 control.lateral = int(
@@ -216,12 +216,12 @@ class ROV26RcMixer:
                 control.vertical = int(self.current_vertical)
                 control.yaw = int(self.current_yaw)
 
-            if self.record_btn.toggle(self.keyboard_state.get_key() == "r"):
-                self.control_recorder.toggle_record()
-            elif self.playback_btn.toggle(self.keyboard_state.get_key() == "p"):
-                self.control_recorder.toggle_playback()
+        if self.record_btn.toggle(self.keyboard_state.get_key() == "r"):
+            self.control_recorder.toggle_record()
+        elif self.playback_btn.toggle(self.keyboard_state.get_key() == "p"):
+            self.control_recorder.toggle_playback()
 
-            self.control_recorder.process_data(self.control_state)
+        self.control_recorder.process_data(self.control_state)
 
     def _update_servo_inputs(self, inputs: InputState):
         if inputs.dpad_vert == 1:
