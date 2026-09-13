@@ -29,6 +29,7 @@ class DirectionMaintainer:
         self.vision_state = vision_state
         self.deadzone = deadzone
         self.timeout = timeout
+        self.maintainer = None
         logger.info(
             f"{self.__class__.__name__} initialized. Target: {self.target}, "
             f"PID: ({kp}, {ki}, {kd}), Deadzone: {self.deadzone}"
@@ -51,6 +52,8 @@ class DirectionMaintainer:
         last_not_maintained = time.time()
         last_maintained = time.time()
 
+        other_maintained = time.time()
+
         while not long_maintained and self.auto_event.is_set():
             current = self.get_current()
             output = self.pid(current)
@@ -68,6 +71,19 @@ class DirectionMaintainer:
             time_since_not_maintained = time.time() - last_not_maintained
 
             long_maintained = time_since_not_maintained > 1.0
+
+            if (
+                self.maintainer is not None
+                and abs(self.maintainer.get_current() - self.maintainer.pid.setpoint)
+                > self.maintainer.deadzone
+            ):
+                if time.time() - other_maintained > 1:
+                    logger.info(
+                        f"[{self.__class__.__name__}] Target tiemout due to other"
+                    )
+                    return False
+            else:
+                other_maintained = time.time()
 
             if time.time() - last_maintained > self.timeout:
                 logger.info(
@@ -96,10 +112,8 @@ class ForwardMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        vertical_maintainer=None,  # Inject the vertical maintainer
         **kwargs,
     ):
-        self.vertical_maintainer = vertical_maintainer
         super().__init__(
             target,
             vision_state,
@@ -130,10 +144,8 @@ class LateralMaintainer(DirectionMaintainer):
         vision_state: VisionState,
         control_state: ControlState,
         auto_event,
-        vertical_maintainer=None,  # Inject the vertical maintainer
         **kwargs,
     ):
-        self.vertical_maintainer = vertical_maintainer
         super().__init__(
             target,
             vision_state,

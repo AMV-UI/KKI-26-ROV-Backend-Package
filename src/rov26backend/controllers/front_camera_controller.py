@@ -2,11 +2,9 @@ import logging
 import queue
 import sys
 import threading
-import time
 
 import cv2
 import numpy as np
-from pyzbar.pyzbar import decode
 
 from rov26backend.controllers.base_camera_controller import BaseCamera
 from rov26backend.controllers.polygon_debouncer import QRDebouncer
@@ -27,8 +25,8 @@ class FrontCamera(BaseCamera):
         **kwargs,
     ):
         default_cam_id = (
-            # "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
-            "046d_C270_HD_WEBCAM_55E22480"
+            "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
+            # "046d_C270_HD_WEBCAM_55E22480"
             if sys.platform == "linux"
             else "7&2C094952&0&0000"
         )
@@ -85,7 +83,6 @@ class FrontCamera(BaseCamera):
 
         # 2. Ambil polygon QR yang SUDAH di-update oleh AI Worker dari VisionState
         with self.vision_state as vision_state:
-
             raw_polygon = self.qrbouncer.update(ai_poly, poly_shape)
 
             if raw_polygon is not None:

@@ -215,6 +215,8 @@ def rov(
     )
     keyboard_listener.start()
 
+    auto_event.set()
+
     logger.info("Main script active. Press Ctrl+C to stop.")
 
     try:

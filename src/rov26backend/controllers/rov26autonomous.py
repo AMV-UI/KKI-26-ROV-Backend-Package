@@ -23,7 +23,7 @@ class Rov26Autonomous:
         auto_event: threading.Event,
         **kwargs,
     ):
-        self.target_x = kwargs.get("target_x") or 1.0
+        self.target_x = kwargs.get("target_x") or 0.0
         self.target_y = kwargs.get("target_y") or -3.9
         self.target_z = kwargs.get("target_z") or 26.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
@@ -52,7 +52,6 @@ class Rov26Autonomous:
                 vision_state,
                 control_state,
                 auto_event,
-                vertical_maintainer=self.vertical_maintainer,  # Pass instance here
                 lateral_kp=kwargs.get("lateral_kp"),
                 lateral_ki=kwargs.get("lateral_ki"),
                 lateral_kd=kwargs.get("lateral_kd"),
@@ -63,13 +62,15 @@ class Rov26Autonomous:
                 vision_state,
                 control_state,
                 auto_event,
-                vertical_maintainer=self.vertical_maintainer,  # Pass instance here
                 forward_kp=kwargs.get("forward_kp"),
                 forward_ki=kwargs.get("forward_ki"),
                 forward_kd=kwargs.get("forward_kd"),
                 deadzone=kwargs.get("forward_deadzone"),
             ),
         ]
+
+        # self.maintainers[0].maintainer = self.maintainers[1]
+        self.maintainers[1].maintainer = self.maintainers[0]
         logger.info("Rov26Autonomous worker tracking instance ready.")
 
     def start(self):
@@ -150,11 +151,11 @@ class Rov26Autonomous:
         # mundur 3 detik
         logger.info("Phase 3.1: Reversing away from the pipe.")
         with self.control_state as control:
-            control.forward = 1450
+            control.forward = 1100
             control.lateral = 1500
             control.vertical = 1500
             control.yaw = 1500
-            control.servo = 2320
+            control.servo = 2220
         time.sleep(3)
 
         # stop bentar
@@ -171,9 +172,9 @@ class Rov26Autonomous:
         with self.control_state as control:
             control.forward = 1500
             control.lateral = 1500
-            control.vertical = 1600
+            control.vertical = 1900
             control.yaw = 1500
-        time.sleep(6)
+        time.sleep(10)
 
         # Stop and stabilize
         logger.info("Phase 3.4: Payload release maneuver complete.")
@@ -182,7 +183,6 @@ class Rov26Autonomous:
             control.lateral = 1500
             control.vertical = 1500
             control.yaw = 1500
-            control.servo = 1700
 
     def auto_opt_2(self):
         logger.info("Autonomous Phase 3: Taking the pay load off the hook.")
@@ -242,15 +242,14 @@ class Rov26Autonomous:
                     self.auto_event.clear()
                     continue
 
-                self.vertical_maintainer.control_until_timeout(12)
-
+                self.vertical_maintainer.control_until_timeout(8)
 
                 with self.control_state as control:
                     control.vertical = 1500
 
                 with self.control_state as control:
                     control.target_mode = "ALT_HOLD"
-                # Ini buat apa dah masih bingung
+
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
                 )
