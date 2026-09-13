@@ -102,8 +102,10 @@ class ROV26RcMixer:
         self.stabilize_btn = PressButton()
         self.autonomous_btn = PressButton()
         self.arm_btn = SimulPressButton()
+
         self.manual_tune_btn = PressButtonTarget(-1)
         self.auto_tune_btn = PressButtonTarget(1)
+
         self.record_btn = PressButton()
         self.playback_btn = PressButton()
         self.recorded_depth_btn = PressButton()
@@ -141,7 +143,6 @@ class ROV26RcMixer:
         self._dump2queue(manual_config)
 
     def _dump2queue(self, book):
-        # logger.info(book)
         for group_id, limits in book.items():
             for param_name, val in limits.items():
                 if group_id == "GLOBAL":
@@ -271,7 +272,7 @@ class ROV26RcMixer:
             elif self.autonomous_btn.toggle(inputs.btn_up):
                 control.target_mode = "AUTO"
 
-            if self.manual_btn.toggle(inputs.dpad_hor):
+            if self.manual_tune_btn.toggle(inputs.dpad_hor):
                 self._set_tune_manual()
             elif self.auto_tune_btn.toggle(inputs.dpad_hor):
                 self._set_tune_auto()
