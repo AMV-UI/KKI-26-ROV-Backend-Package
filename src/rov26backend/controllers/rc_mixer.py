@@ -143,14 +143,19 @@ class ROV26RcMixer:
         self._dump2queue(manual_config)
 
     def _dump2queue(self, book):
-        for group_id, limits in book.items():
-            for param_name, val in limits.items():
-                if group_id == "GLOBAL":
-                    param_id = param_name
-                else:
-                    param_id = f"MOT_{group_id}_{param_name}"
+        if self.param_queue.empty():
+            for group_id, limits in book.items():
+                for param_name, val in limits.items():
+                    if group_id == "GLOBAL":
+                        param_id = param_name
+                    else:
+                        param_id = f"MOT_{group_id}_{param_name}"
 
-                self.param_queue.put((param_id, val))
+                    self.param_queue.put((param_id, val))
+            logger.info("Param queue dumped successfully")
+
+        else:
+            logger.info("Still setting param queue from last switch")
 
     def _load_config(self, SAVE_FILE):
         defaults = {

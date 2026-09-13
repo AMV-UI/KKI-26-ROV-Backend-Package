@@ -27,8 +27,8 @@ class FrontCamera(BaseCamera):
         **kwargs,
     ):
         default_cam_id = (
-            "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
-            # "046d_C270_HD_WEBCAM_55E22480"
+            # "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
+            "046d_C270_HD_WEBCAM_55E22480"
             if sys.platform == "linux"
             else "7&2C094952&0&0000"
         )
@@ -44,8 +44,8 @@ class FrontCamera(BaseCamera):
         self.pnp_solver = solvePnP(vision_state)
         self.qrbouncer = QRDebouncer()
 
-        self.qr_text = "NOT_FOUND"
-        self.last_qr_read = time.time()
+        # self.qr_text = "NOT_FOUND"
+        # self.last_qr_read = time.time()
 
     def update_frame(self, frame):
         """Memasukkan frame terbaru secara thread-safe dan kirim ke AI Queue."""
@@ -69,23 +69,22 @@ class FrontCamera(BaseCamera):
             self.frame_queue.get()
             self.frame_queue.put_nowait(frame)
 
-        if time.time() - self.last_qr_read > 0.5:
-            decoded_objects = decode(frame)
-            if decoded_objects:
-                for obj in decoded_objects:
-                    data = obj.data.decode("utf-8")
-                    if data in ["A", "B", "C", "D"]:
-                        self.qr_text = data
-                        break
-            else:
-                self.qr_text = "NOT_FOUND"
-            self.last_qr_read = time.time()
+        # if time.time() - self.last_qr_read > :
+        #     decoded_objects = decode(frame)
+        #     if decoded_objects:
+        #         for obj in decoded_objects:
+        #             data = obj.data.decode("utf-8")
+        #             if data in ["A", "B", "C", "D"]:
+        #                 self.qr_text = data
+        #                 break
+        #     else:
+        #         self.qr_text = "NOT_FOUND"
+        #     self.last_qr_read = time.time()
 
         ai_poly, poly_shape = self.polygon_state.get_latest().qr_polygon
 
         # 2. Ambil polygon QR yang SUDAH di-update oleh AI Worker dari VisionState
         with self.vision_state as vision_state:
-            vision_state.qr_side = self.qr_text
 
             raw_polygon = self.qrbouncer.update(ai_poly, poly_shape)
 
@@ -119,7 +118,7 @@ class FrontCamera(BaseCamera):
             )
 
             tx, ty, tz = tvec.flatten()
-            xyz_text = f"X:{tx:.1f} Y:{ty:.1f} Z:{tz:.1f}cm Data:{self.qr_text}"
+            xyz_text = f"X:{tx:.1f} Y:{ty:.1f} Z:{tz:.1f}cm"
 
             # Safely extract scalars using the inner array (int conversion is handled)
             text_x = int(actual_poly[0][0])

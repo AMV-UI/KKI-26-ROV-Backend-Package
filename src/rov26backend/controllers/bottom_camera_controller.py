@@ -48,6 +48,3 @@ class BottomCamera(BaseCamera):
 
         with self.vision_state as vision_state:
             vision_state.qr_side = self.qr_text
-
-        # Note: Any drawings (like cv2.rectangle for the QR bounding box)
-        # should still be done on the original `frame` object so they appear in the stream.

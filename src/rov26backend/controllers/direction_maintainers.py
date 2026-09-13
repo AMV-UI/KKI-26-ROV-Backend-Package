@@ -20,7 +20,7 @@ class DirectionMaintainer:
         ki=0,
         kd=0,
         deadzone=0.5,
-        timeout=3,
+        timeout=6,
     ):
         self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-400, 400))
         self.auto_event = auto_event
@@ -105,10 +105,10 @@ class ForwardMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("forward_kp") or -2.0,
+            kwargs.get("forward_kp") or -100.0,
             kwargs.get("forward_ki") or 0.0,
             kwargs.get("forward_kd") or 0.0,
-            kwargs.get("forward_deadzone") or 0.5,
+            kwargs.get("forward_deadzone") or 3,
         )
 
     def control_to(self, value):
@@ -139,10 +139,10 @@ class LateralMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("lateral_kp") or -10.0,
+            kwargs.get("lateral_kp") or -100.0,
             kwargs.get("lateral_ki") or 0.0,
             kwargs.get("lateral_kd") or 0.0,
-            kwargs.get("lateral_deadzone") or 0.5,
+            kwargs.get("lateral_deadzone") or 1.0,
         )
 
     def control_to(self, value):

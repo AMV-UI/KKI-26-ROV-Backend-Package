@@ -23,9 +23,9 @@ class Rov26Autonomous:
         auto_event: threading.Event,
         **kwargs,
     ):
-        self.target_x = kwargs.get("target_x") or 0.7
+        self.target_x = kwargs.get("target_x") or 1.0
         self.target_y = kwargs.get("target_y") or -3.9
-        self.target_z = kwargs.get("target_z") or 24.0
+        self.target_z = kwargs.get("target_z") or 26.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
 
         self._thread = None
@@ -97,8 +97,6 @@ class Rov26Autonomous:
             logger.info(
                 f"Autonomous Phase 1: Descending to recorded depth of {recorded_depth:.2f} m."
             )
-            with self.control_state as control:
-                control.target_mode = "ALT_HOLD"
             return True
 
         logger.info("No recorded depth available.")
@@ -156,6 +154,7 @@ class Rov26Autonomous:
             control.lateral = 1500
             control.vertical = 1500
             control.yaw = 1500
+            control.servo = 2320
         time.sleep(3)
 
         # stop bentar
@@ -183,6 +182,7 @@ class Rov26Autonomous:
             control.lateral = 1500
             control.vertical = 1500
             control.yaw = 1500
+            control.servo = 1700
 
     def auto_opt_2(self):
         logger.info("Autonomous Phase 3: Taking the pay load off the hook.")
@@ -242,8 +242,14 @@ class Rov26Autonomous:
                     self.auto_event.clear()
                     continue
 
-                self.vertical_maintainer.control_until_timeout(6)
+                self.vertical_maintainer.control_until_timeout(12)
 
+
+                with self.control_state as control:
+                    control.vertical = 1500
+
+                with self.control_state as control:
+                    control.target_mode = "ALT_HOLD"
                 # Ini buat apa dah masih bingung
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
@@ -258,10 +264,11 @@ class Rov26Autonomous:
                         with self.control_state as control:
                             control.forward = 1500
                             control.lateral = 1500
+                            control.vertical = 1500
                             control.yaw = 1500
                             control.servo = 1700
 
-                        self.vertical_maintainer.control_until_timeout(6)
+                        time.sleep(2)
 
                     if all_maintained:
                         logger.info(
@@ -270,9 +277,8 @@ class Rov26Autonomous:
                         break
                     time.sleep(0.01)
 
-                self.forward_and_grip()
+                # self.forward_and_grip()
                 self.auto_opt_1()
-
                 self.auto_event.clear()
                 logger.info(
                     "Autonomous mission routing complete. Returning control context to baseline system."

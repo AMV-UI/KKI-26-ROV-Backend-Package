@@ -91,7 +91,7 @@ def rov(
     keyboard_state = SharedKeyboardState()
     depth_state = DepthState()
 
-    mikon_param_queue = queue.Queue(maxsize=60)
+    mikon_param_queue = queue.Queue(maxsize=500)
 
     polygon_state = PolygonState()
     frame_queue = queue.Queue(maxsize=1)
