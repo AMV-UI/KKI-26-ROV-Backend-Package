@@ -132,6 +132,7 @@ def rov(
             mikon_param_queue,
             auto_event,
             keyboard_state,
+            depth_state,
             smoothing_factor=smoothing_factor,
             servo_open=servo_open,
             servo_close=servo_close,

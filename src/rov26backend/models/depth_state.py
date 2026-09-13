@@ -7,6 +7,7 @@ from typing import Any
 @dataclass
 class DepthState:
     depth = 0.0
+    recorded_depth = None
 
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.
