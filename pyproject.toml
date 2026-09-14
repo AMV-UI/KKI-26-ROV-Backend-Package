@@ -22,7 +22,7 @@ dependencies = [
     "pillow ~= 12.3",
     "typer ~= 0.27",
     "typer-cli ~= 0.24",
-    "pynput ~= 1.8",
+    "keyboard ~= 0.13",
     "pandas ~= 2.3",
 ]
 

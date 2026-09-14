@@ -14,22 +14,13 @@ class SharedKeyboardState:
         self.lock = threading.Lock()
         self.running = True
 
-    def set_key(self, key):
+    def set_key(self, event):
         with self.lock:
-            try:
-                self.active_key = key.char  # For standard alphanumeric keys
-            except AttributeError:
-                self.active_key = key.name  # For special keys (esc, space, etc.)
+            self.active_key = event.name
 
-    def clear_key_on_release(self, key):
+    def clear_key_on_release(self, event):
         with self.lock:
-            try:
-                released_key = key.char
-            except AttributeError:
-                released_key = key.name
-
-            # Only set to None if the released key is the one currently stored
-            if self.active_key == released_key:
+            if self.active_key == event.name:
                 self.active_key = None
 
     def get_key(self):

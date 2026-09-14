@@ -25,7 +25,7 @@ import logging
 import time
 from typing import Annotated
 
-from pynput import keyboard
+import keyboard
 
 from rov26backend.config import log_listener
 from rov26backend.controllers.dummy_mikon import DummyPixhawk
@@ -209,17 +209,13 @@ def rov(
         tuner = LivePWMOverlayTuner(mikon_param_queue)
         tuner.start()
 
-    def on_press(key, state):
-        state.set_key(key)
+    def handle_key_event(event):
+        if event.event_type == keyboard.KEY_DOWN:
+            keyboard_state.set_key(event)
+        elif event.event_type == keyboard.KEY_UP:
+            keyboard_state.clear_key_on_release(event)
 
-    def on_release(key, state):
-        state.clear_key_on_release(key)
-
-    keyboard_listener = keyboard.Listener(
-        on_press=lambda k: on_press(k, keyboard_state),
-        on_release=lambda k: on_release(k, keyboard_state),
-    )
-    keyboard_listener.start()
+    keyboard.hook(handle_key_event)
 
     auto_event.set()
 
@@ -251,9 +247,6 @@ def rov(
             qr_finder.stop()
         if keyboard_joy:
             keyboard_joy.stop()
-
-        keyboard_listener.stop()
-        keyboard_listener.join()
 
         logger.info("Waiting for threads to exit...")
         logger.info("All threads stopped. Goodbye.")
