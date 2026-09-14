@@ -232,9 +232,14 @@ class Rov26Autonomous:
                 logger.info("Autonomous sequence triggered via auto_event flag.")
 
                 def give_up():
+                    logger.info("GIVING UP AUTO")
                     self.auto_event.clear()
 
-                self._fallback_thread = threading.Timer(60, give_up)
+                self._fallback_thread = threading.Timer(5, give_up)
+
+                self._fallback_thread.start()
+
+                time.sleep(3)
 
                 with self.control_state as control:
                     control.forward = 1425

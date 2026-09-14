@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo /home/jarararod/KKI-26-ROV-Backend-Package/venv/bin/gawerov "$@"
+sudo ./venv/bin/gawerov "$@"
 
 
 
