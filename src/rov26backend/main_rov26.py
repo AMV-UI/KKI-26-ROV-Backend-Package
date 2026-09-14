@@ -217,7 +217,7 @@ def rov(
 
     keyboard.hook(handle_key_event)
 
-    auto_event.set()
+    # auto_event.set()
 
     logger.info("Main script active. Press Ctrl+C to stop.")
 
