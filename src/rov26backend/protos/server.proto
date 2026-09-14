@@ -28,7 +28,7 @@ message telemetryResponse {
   Mode mode = 1;
   float battery = 2;
   google.protobuf.Timestamp timestamp = 5;
-  Side qr_side = 6;
+  string qr_side = 6;
   float depth = 7;
   bool fc_cpu_load = 8;
   bool fc_gyro_health = 9;

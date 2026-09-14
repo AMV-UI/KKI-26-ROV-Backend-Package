@@ -42,9 +42,7 @@ class BottomCamera(BaseCamera):
         if decoded_objects:
             for obj in decoded_objects:
                 data = obj.data.decode("utf-8")
-                if data in ["A", "B", "C", "D"]:
-                    self.qr_text = data
-                    break
+                self.qr_text = data
 
         with self.vision_state as vision_state:
             vision_state.qr_side = self.qr_text

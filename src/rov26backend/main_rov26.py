@@ -29,6 +29,7 @@ from pynput import keyboard
 
 from rov26backend.config import log_listener
 from rov26backend.controllers.dummy_mikon import DummyPixhawk
+from rov26backend.controllers.keyboard_joystick import KeyboardJoystickController
 from rov26backend.controllers.keyboardshit import SharedKeyboardState
 from rov26backend.controllers.px4_controller import PixhawkController
 from rov26backend.controllers.qrde_poly import QRPolygonFinder
@@ -50,6 +51,7 @@ app = typer.Typer()
 @app.command()
 def rov(
     no: Annotated[list[str], typer.Option()] = [],
+    yes: Annotated[list[str], typer.Option()] = [],
     smoothing_factor: float = None,
     servo_open: int = None,
     servo_close: int = None,
@@ -171,6 +173,10 @@ def rov(
         )
         autonomous.start()
 
+    keyboard_joy = None
+    if "keyboard_joy" in yes:
+        keyboard_joy = KeyboardJoystickController(input_state, keyboard_state)
+        keyboard_joy.start()
     if "mikon" not in no:
         if dummy_mikon:
             mikon = DummyPixhawk(
@@ -243,6 +249,8 @@ def rov(
             tuner.stop()
         if qr_finder:
             qr_finder.stop()
+        if keyboard_joy:
+            keyboard_joy.stop()
 
         keyboard_listener.stop()
         keyboard_listener.join()

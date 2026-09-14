@@ -68,7 +68,7 @@ class telemetryResponse(_message.Message):
     mode: Mode
     battery: float
     timestamp: _timestamp_pb2.Timestamp
-    qr_side: Side
+    qr_side: str
     depth: float
     fc_cpu_load: bool
     fc_gyro_health: bool
@@ -93,4 +93,4 @@ class telemetryResponse(_message.Message):
     fc_baro_health: bool
     armed: bool
     servo_effort: int
-    def __init__(self, mode: _Optional[_Union[Mode, str]] = ..., battery: _Optional[float] = ..., timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., qr_side: _Optional[_Union[Side, str]] = ..., depth: _Optional[float] = ..., fc_cpu_load: _Optional[bool] = ..., fc_gyro_health: _Optional[bool] = ..., rollspeed: _Optional[float] = ..., pitchspeed: _Optional[float] = ..., yawspeed: _Optional[float] = ..., roll: _Optional[float] = ..., pitch: _Optional[float] = ..., yaw: _Optional[float] = ..., forward_rc: _Optional[int] = ..., lateral_rc: _Optional[int] = ..., vertical_rc: _Optional[int] = ..., yaw_rc: _Optional[int] = ..., mot1_eff: _Optional[int] = ..., mot2_eff: _Optional[int] = ..., mot3_eff: _Optional[int] = ..., mot4_eff: _Optional[int] = ..., mot5_eff: _Optional[int] = ..., mot6_eff: _Optional[int] = ..., fc_acc_health: _Optional[bool] = ..., fc_compass_health: _Optional[bool] = ..., fc_baro_health: _Optional[bool] = ..., armed: _Optional[bool] = ..., servo_effort: _Optional[int] = ...) -> None: ...
+    def __init__(self, mode: _Optional[_Union[Mode, str]] = ..., battery: _Optional[float] = ..., timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., qr_side: _Optional[str] = ..., depth: _Optional[float] = ..., fc_cpu_load: _Optional[bool] = ..., fc_gyro_health: _Optional[bool] = ..., rollspeed: _Optional[float] = ..., pitchspeed: _Optional[float] = ..., yawspeed: _Optional[float] = ..., roll: _Optional[float] = ..., pitch: _Optional[float] = ..., yaw: _Optional[float] = ..., forward_rc: _Optional[int] = ..., lateral_rc: _Optional[int] = ..., vertical_rc: _Optional[int] = ..., yaw_rc: _Optional[int] = ..., mot1_eff: _Optional[int] = ..., mot2_eff: _Optional[int] = ..., mot3_eff: _Optional[int] = ..., mot4_eff: _Optional[int] = ..., mot5_eff: _Optional[int] = ..., mot6_eff: _Optional[int] = ..., fc_acc_health: _Optional[bool] = ..., fc_compass_health: _Optional[bool] = ..., fc_baro_health: _Optional[bool] = ..., armed: _Optional[bool] = ..., servo_effort: _Optional[int] = ...) -> None: ...
