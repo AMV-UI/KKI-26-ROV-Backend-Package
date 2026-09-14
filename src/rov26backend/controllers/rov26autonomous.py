@@ -69,6 +69,8 @@ class Rov26Autonomous:
             ),
         ]
 
+        self._fallback_thread = None
+
         # self.maintainers[0].maintainer = self.maintainers[1]
         self.maintainers[1].maintainer = self.maintainers[0]
         logger.info("Rov26Autonomous worker tracking instance ready.")
@@ -229,7 +231,11 @@ class Rov26Autonomous:
             if self.auto_event.is_set():
                 logger.info("Autonomous sequence triggered via auto_event flag.")
 
-                # mundur
+                def give_up():
+                    self.auto_event.clear()
+
+                self._fallback_thread = threading.Timer(60, give_up)
+
                 with self.control_state as control:
                     control.forward = 1425
                 time.sleep(6)
@@ -285,7 +291,7 @@ class Rov26Autonomous:
                 with self.control_state as control:
                     control.forward = 1500
                     control.lateral = 1500
-                    control.vertical = 1500
+                    control.vertical = 1900
                     control.yaw = 1500
                     control.servo = 1700
 
