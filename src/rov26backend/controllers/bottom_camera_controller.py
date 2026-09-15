@@ -10,7 +10,9 @@ from rov26backend.models.qrdat_state import QrdatState
 
 import cv2
 import numpy as np
+import logging
 
+logger = logging.getLogger("ROV.cam")
 
 def order_points(points):
     """
@@ -111,7 +113,7 @@ class BottomCamera(BaseCamera):
 
     def process_and_publish(self, frame):
         if self.qr_text != "NOT_FOUND":
-            return 
+            return
 
         ai_poly, poly_shape = self.polygon_state.get_latest().qr_polygon
 
@@ -143,40 +145,39 @@ class BottomCamera(BaseCamera):
         # =========================
         # 2. Preprocessing ROI
         # =========================
-        gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-
-        blurred = cv2.GaussianBlur(
-            gray,
-            (5, 5),
-            0
-        )
-
-        thresh = cv2.adaptiveThreshold(
-            blurred,
-            255,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY,
-            11,
-            2
-        )
+        # gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+        #
+        # blurred = cv2.GaussianBlur(
+        #     gray,
+        #     (5, 5),
+        #     0
+        # )
+        #
+        # thresh = cv2.adaptiveThreshold(
+        #     blurred,
+        #     255,
+        #     cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        #     cv2.THRESH_BINARY,
+        #     11,
+        #     2
+        # )
 
         # =========================
         # 3. Decode pakai pyzbar
         # =========================
-        decoded_objects = decode(thresh)
 
-        self.qr_text = "NOT_FOUND"
-
-        for obj in decoded_objects:
-            self.qr_text = obj.data.decode("utf-8")
-            break
+        if self.qr_text == "NOT_FOUND":
+            decoded_objects = decode(warped)
+            for obj in decoded_objects:
+                self.qr_text = obj.data.decode("utf-8")
+                logger.info(self.qr_text)
+                break
+            with self.vision_state as vision_state:
+                vision_state.qr_side = self.qr_text
 
         # =========================
         # 4. Update state
         # =========================
-        if self.qr_text == "NOT_FOUND":
-            with self.vision_state as vision_state:
-                vision_state.qr_side = self.qr_text
 
         # =========================
         # 5. Display Warped Image Directly
