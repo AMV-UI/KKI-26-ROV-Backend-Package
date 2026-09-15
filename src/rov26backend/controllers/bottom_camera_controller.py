@@ -35,12 +35,11 @@ def order_points(points):
     )
 
 
-def warp_qr(frame, polygon, output_size=300):
+def warp_qr(frame, polygon, output_size=300, padding_scale=1.2):
     """
-    Take QR polygon from qrdet and warp it into
-    a square, front-facing image.
+    Take QR polygon from qrdet and warp it into a square, front-facing image,
+    enlarging the bounding box by `padding_scale` (e.g. 1.2 = 20% larger).
     """
-
     if polygon is None:
         return None
 
@@ -50,8 +49,14 @@ def warp_qr(frame, polygon, output_size=300):
     if len(points) != 4:
         return None
 
+    # 1. Order points
     rect = order_points(points)
 
+    # 2. Expand corner points outward relative to their centroid
+    centroid = np.mean(rect, axis=0)
+    rect = centroid + (rect - centroid) * padding_scale
+
+    # 3. Define target square dimensions
     dst = np.array(
         [
             [0, 0],
@@ -62,6 +67,7 @@ def warp_qr(frame, polygon, output_size=300):
         dtype=np.float32,
     )
 
+    # 4. Perspective transform
     matrix = cv2.getPerspectiveTransform(rect, dst)
 
     warped = cv2.warpPerspective(
@@ -104,9 +110,13 @@ class BottomCamera(BaseCamera):
     
 
     def process_and_publish(self, frame):
+        if self.qr_text != "NOT_FOUND":
+            return 
+
         ai_poly, poly_shape = self.polygon_state.get_latest().qr_polygon
 
         # Simpan frame untuk QRDetector
+        import queue # Make sure queue is imported at the top of your file
         try:
             self.frame_queue.put_nowait(frame.copy())
         except queue.Full:
@@ -133,7 +143,7 @@ class BottomCamera(BaseCamera):
         # =========================
         # 2. Preprocessing ROI
         # =========================
-        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
 
         blurred = cv2.GaussianBlur(
             gray,
@@ -164,7 +174,19 @@ class BottomCamera(BaseCamera):
         # =========================
         # 4. Update state
         # =========================
-        with self.vision_state as vision_state:
-            vision_state.qr_side = self.qr_text
+        if self.qr_text == "NOT_FOUND":
+            with self.vision_state as vision_state:
+                vision_state.qr_side = self.qr_text
+
+        # =========================
+        # 5. Display Warped Image Directly
+        # =========================
+        # Get the original frame dimensions to prevent breaking the RTSP stream
+        original_height, original_width = frame.shape[:2]
         
+        # Resize the 300x300 warped image to fit the original frame size
+        warped_resized = cv2.resize(warped, (original_width, original_height))
         
+        # Overwrite the original frame in-place. 
+        # BaseCamera will now publish this modified frame.
+        frame[:] = warped_resized
