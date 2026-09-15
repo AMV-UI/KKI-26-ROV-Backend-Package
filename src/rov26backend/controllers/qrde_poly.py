@@ -12,12 +12,12 @@ logger = logging.getLogger("ROV.mixer")
 
 
 class QRPolygonFinder:
-    def __init__(self, frame_queue, polygon_state: PolygonState):
+    def __init__(self, frame_queue, polygon_state: PolygonState, model_size="n"):
         self.frame_queue = frame_queue
         self.polygon_state = polygon_state
         self._thread = None
         self._is_running = threading.Event()
-
+        self.model_state = model_size
     def start(self):
         if self._thread is None:
             self._is_running.set()
@@ -30,7 +30,7 @@ class QRPolygonFinder:
             self._thread.join()
 
     def run(self):
-        self.detector = QRDetector(model_size="n", conf_th=0.5)
+        self.detector = QRDetector(model_size=self.model_state, conf_th=0.5)
 
         while self._is_running.is_set():
             try:

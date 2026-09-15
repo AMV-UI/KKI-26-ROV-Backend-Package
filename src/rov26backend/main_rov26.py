@@ -94,14 +94,18 @@ def rov(
     keyboard_state = SharedKeyboardState()
     depth_state = DepthState()
     qrdat_state = QrdatState()
+    qrdetectionpoly_state = PolygonState()
 
     mikon_param_queue = queue.Queue(maxsize=500)
 
     polygon_state = PolygonState()
     frame_queue = queue.Queue(maxsize=1)
+    frame_state = queue.Queue(maxsize=1)
 
-    qr_finder = QRPolygonFinder(frame_queue, polygon_state)
+    qr_finder = QRPolygonFinder(frame_queue, polygon_state, model_size="m")
+    qrpoly_finder = QRPolygonFinder(frame_state, qrdetectionpoly_state, model_size="n")
     qr_finder.start()
+    qrpoly_finder.start()
 
     if "front_cam" not in no:
         # Pass the shared queues/states to FrontCamera
@@ -195,7 +199,7 @@ def rov(
         mikon.start()
 
     if "bottom_cam" not in no:
-        bottom_camera = BottomCamera(qrdat_state, bottom_cam_id=bottom_cam_id)
+        bottom_camera = BottomCamera(qrdat_state, qrdetectionpoly_state, frame_state, bottom_cam_id=bottom_cam_id)
         bottom_camera.start()
 
     if "grpc" not in no:
@@ -249,6 +253,8 @@ def rov(
             qr_finder.stop()
         if keyboard_joy:
             keyboard_joy.stop()
+        if qrpoly_finder:
+            qrpoly_finder.stop()
 
         logger.info("Waiting for threads to exit...")
         logger.info("All threads stopped. Goodbye.")
