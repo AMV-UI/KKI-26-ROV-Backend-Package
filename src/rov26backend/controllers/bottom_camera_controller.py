@@ -8,6 +8,70 @@ from rov26backend.controllers.base_camera_controller import BaseCamera
 from rov26backend.models.qrdat_state import QrdatState
 
 
+import cv2
+import numpy as np
+
+
+def order_points(points):
+    """
+    Order 4 QR corners as:
+    top-left, top-right, bottom-right, bottom-left
+    """
+    points = np.array(points, dtype=np.float32)
+
+    # Sum: smallest = top-left, largest = bottom-right
+    s = points.sum(axis=1)
+    top_left = points[np.argmin(s)]
+    bottom_right = points[np.argmax(s)]
+
+    # Difference: smallest = top-right, largest = bottom-left
+    diff = np.diff(points, axis=1).flatten()
+    top_right = points[np.argmin(diff)]
+    bottom_left = points[np.argmax(diff)]
+
+    return np.array(
+        [top_left, top_right, bottom_right, bottom_left],
+        dtype=np.float32,
+    )
+
+
+def warp_qr(frame, polygon, output_size=300):
+    """
+    Take QR polygon from qrdet and warp it into
+    a square, front-facing image.
+    """
+
+    if polygon is None:
+        return None
+
+    points = np.array(polygon, dtype=np.float32)
+
+    # Need 4 corners
+    if len(points) != 4:
+        return None
+
+    rect = order_points(points)
+
+    dst = np.array(
+        [
+            [0, 0],
+            [output_size - 1, 0],
+            [output_size - 1, output_size - 1],
+            [0, output_size - 1],
+        ],
+        dtype=np.float32,
+    )
+
+    matrix = cv2.getPerspectiveTransform(rect, dst)
+
+    warped = cv2.warpPerspective(
+        frame,
+        matrix,
+        (output_size, output_size),
+    )
+
+    return warped
+
 class BottomCamera(BaseCamera):
     """
     Child class for the Bottom (Down) Camera.
@@ -37,6 +101,8 @@ class BottomCamera(BaseCamera):
         self.frame_queue = frame_state
 
 
+    
+
     def process_and_publish(self, frame):
         ai_poly, poly_shape = self.polygon_state.get_latest().qr_polygon
 
@@ -49,26 +115,19 @@ class BottomCamera(BaseCamera):
 
         # Kalau QR tidak terdeteksi qrdet
         if ai_poly is None:
-            with self.vision_state as vision_state:
-                vision_state.qr_side = "NOT_FOUND"
             return
 
         # =========================
-        # 1. Buat bounding box QR
+        # WARP QR
         # =========================
-        x, y, w, h = cv2.boundingRect(ai_poly)
 
-        # Pastikan koordinat tidak keluar frame
-        frame_h, frame_w = frame.shape[:2]
+        warped = warp_qr(
+            frame,
+            ai_poly,
+            output_size=300,
+        )
 
-        x1 = max(x, 0)
-        y1 = max(y, 0)
-        x2 = min(x + w, frame_w)
-        y2 = min(y + h, frame_h)
-
-        roi = frame[y1:y2, x1:x2]
-
-        if roi.size == 0:
+        if warped is None:
             return
 
         # =========================
