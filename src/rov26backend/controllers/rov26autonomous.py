@@ -7,6 +7,7 @@ from rov26backend.controllers.direction_maintainers import (
     LateralMaintainer,
     VerticalMaintainer,
 )
+from rov26backend.controllers.keyboardshit import ControlRecorder, SharedKeyboardState
 from rov26backend.models.control_state import ControlState
 from rov26backend.models.depth_state import DepthState
 from rov26backend.models.vision_state import VisionState
@@ -33,6 +34,8 @@ class Rov26Autonomous:
         self.auto_event = auto_event
         self.control_state = control_state
         self.vision_state = vision_state
+        self.keyboard_state = SharedKeyboardState()
+        self.recorder = ControlRecorder()
         self.vertical_maintainer = VerticalMaintainer(
             self.target_y,
             vision_state,
@@ -86,6 +89,19 @@ class Rov26Autonomous:
             self._thread.join()
             self._thread = None
         logger.info("Autonomous manager thread fully stopped.")
+
+    def target_depth(self):
+        recorded_depth = self.depth_state.get_latest().recorded_depth
+        if recorded_depth is not None:
+            self.vertical_maintainer.pid.setpoint = recorded_depth
+
+            logger.info(
+                f"Autonomous Phase 1: Descending to recorded depth of {recorded_depth:.2f} m."
+            )
+            return True
+
+        logger.info("No recorded depth available.")
+        return False
 
     def auto_opt_1(self):
         logger.info("Autonomous Phase 3: Taking the pay load off the hook.")
@@ -163,6 +179,18 @@ class Rov26Autonomous:
             control.yaw = 1500
         time.sleep(5)
 
+    def auto_playback(self):
+        logger.info("Autonomous Phase 3: Taking the pay load off the hook.")
+
+        logger.info("Hardcode finished. Starting playback...")
+        self.recorder.toggle_playback() # Ini akan meload control.parquet
+        
+        # Jalankan loop playback
+        while self.recorder.is_playing and self._is_running.is_set():
+            self.recorder.process_data(self.control_state)
+            time.sleep(self.recorder.delay)
+
+
     def run(self):
         logger.info("Autonomous execution thread processing loops active.")
         while self._is_running.is_set():
@@ -177,11 +205,20 @@ class Rov26Autonomous:
                 with self.control_state as control:
                     control.forward = 1500
 
+                if not self.target_depth():
+                    logger.warning("No recorded depth. Aborting autonomous sequence.")
+                    self.auto_event.clear()
+                    continue
+
+                with self.control_state as control:
+                    control.vertical = 1500
+
                 self.vertical_maintainer.control_until_timeout(6)
 
                 with self.control_state as control:
                     control.target_mode = "ALT_HOLD"
 
+                #mainain lateral, vibesnya gausah
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
                 )
@@ -209,6 +246,7 @@ class Rov26Autonomous:
 
                 # self.auto_opt_1()
                 # self.auto_opt_2()
+                #self.auto_playback()
 
                 self.auto_event.clear()
                 logger.info(

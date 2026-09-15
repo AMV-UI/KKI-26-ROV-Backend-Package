@@ -30,7 +30,7 @@ class FrontCamera(BaseCamera):
             "CNFHH52R10643003DBB0_Integrated_Webcam_HD"
             # "046d_C270_HD_WEBCAM_55E22480"
             if sys.platform == "linux"
-            else "7&2C094952&0&0000"
+            else "9&2C094952&0&0000"
         )
         super().__init__(
             camera_id=kwargs.get("front_camera_id") or default_cam_id,

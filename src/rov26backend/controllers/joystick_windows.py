@@ -28,6 +28,7 @@ class PxnP5JoystickWindows:
             logger.warning("No gamepad detected! Waiting for connection...")
 
     def start(self):
+        logger.info("Starting joystick...")
         if self._thread is None:
             self._is_running.set()
             self._thread = threading.Thread(target=self.monitor, daemon=True)
@@ -41,7 +42,9 @@ class PxnP5JoystickWindows:
     def monitor(self):
         self._check_connection()
 
+        logger.info("Starting joystick monitoring thread...")
         while self._is_running.is_set():
+            logger.info("Monitoring joystick input...")
             try:
                 if not self.is_connected:
                     self._check_connection()
@@ -70,6 +73,7 @@ class PxnP5JoystickWindows:
 
                     input_state.rb = buttons.get("RIGHT_SHOULDER", False)
                     input_state.lb = buttons.get("LEFT_SHOULDER", False)
+                    input_state.recorded_depth = buttons.get("BACK", False)
 
                     if buttons.get("DPAD_UP"):
                         input_state.dpad_vert = 1
@@ -82,6 +86,7 @@ class PxnP5JoystickWindows:
                     input_state.btn_right = buttons.get("B", False)
                     input_state.btn_left = buttons.get("X", False)
                     input_state.btn_up = buttons.get("Y", False)
+                    #logger.info(f"Joystick state updated: {buttons}")
 
             except Exception as e:
                 logger.warning(f"Error reading gamepad: {e}")
