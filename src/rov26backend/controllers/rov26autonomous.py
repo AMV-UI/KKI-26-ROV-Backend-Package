@@ -25,7 +25,7 @@ class Rov26Autonomous:
     ):
         self.target_x = kwargs.get("target_x") or 2.1
         self.target_y = kwargs.get("target_y") or -3.9
-        self.target_z = kwargs.get("target_z") or 25.0
+        self.target_z = kwargs.get("target_z") or 18.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
 
         self._thread = None
@@ -155,9 +155,8 @@ class Rov26Autonomous:
         with self.control_state as control:
             control.forward = 1100
             control.lateral = 1500
-            control.vertical = 1900
             control.yaw = 1500
-            control.servo = 2550
+            control.servo = 2570
         time.sleep(4.5)
 
         # stop bentar
@@ -278,8 +277,8 @@ class Rov26Autonomous:
 
                 oncer = True
                 
-                self.maintainers[0].pid.setpoint = 8
-                self.maintainers[0].deadzone = 6
+                self.maintainers[0].pid.setpoint = 4
+                self.maintainers[0].deadzone = 4
 
                 time.sleep(0.5)
                 while self._is_running.is_set() and self.auto_event.is_set():
@@ -306,12 +305,12 @@ class Rov26Autonomous:
                     time.sleep(0.01)
 
                     if oncer:
-                        self.maintainers[0].pid.setpoint = -3.9
-                        self.maintainers[0].deadzone = 5
+                        self.maintainers[0].pid.setpoint = 1
+                        self.maintainers[0].deadzone = 1
                         oncer = False
 
                 # self.forward_and_grip()
-                self.auto_opt_2()
+                self.auto_opt_1()
                 self.auto_event.clear()
                 logger.info(
                     "Autonomous mission routing complete. Returning control context to baseline system."
@@ -321,7 +320,7 @@ class Rov26Autonomous:
                     control.lateral = 1500
                     control.vertical = 1900
                     control.yaw = 1500
-                    control.servo = 2550
+                    control.servo = 2570
 
                 self._fallback_thread.cancel()
 

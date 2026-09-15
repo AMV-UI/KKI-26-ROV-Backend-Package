@@ -40,12 +40,12 @@ class DirectionMaintainer:
         error = abs(current_val - self.target)
         if error <= self.deadzone:
             logger.info(
-                f"[{self.__class__.__name__}] Target already maintained. Current: {current_val:.3f}, Target: {self.target}"
+                f"[{self.__class__.__name__}] Target already maintained. Current: {current_val:.3f}, Target: {self.pid.setpoint}"
             )
             return True
 
         logger.info(
-            f"[{self.__class__.__name__}] Starting track. Current: {current_val:.3f} -> Target: {self.target}"
+            f"[{self.__class__.__name__}] Starting track. Current: {current_val:.3f} -> Target: {self.pid.setpoint}"
         )
 
         long_maintained = False
@@ -70,7 +70,7 @@ class DirectionMaintainer:
 
             time_since_not_maintained = time.time() - last_not_maintained
 
-            long_maintained = time_since_not_maintained > 1.0
+            long_maintained = time_since_not_maintained > 0.5
 
             # if (
             #     self.maintainer is not None
@@ -120,10 +120,11 @@ class ForwardMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("forward_kp") or -30.0,
-            kwargs.get("forward_ki") or 0.0,
+            kwargs.get("forward_kp") or -10.0,
+            kwargs.get("forward_ki") or 0,
             kwargs.get("forward_kd") or 0.0,
-            kwargs.get("forward_deadzone") or 6,
+            kwargs.get("forward_deadzone") or 3.5,
+            timeout=2,
         )
 
     def control_to(self, value):
@@ -152,10 +153,11 @@ class LateralMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("lateral_kp") or -18.0,
+            kwargs.get("lateral_kp") or -5.0,
             kwargs.get("lateral_ki") or 0.0,
             kwargs.get("lateral_kd") or 0.0,
-            kwargs.get("lateral_deadzone") or 5.0,
+            kwargs.get("lateral_deadzone") or 2.0,
+            timeout=4
         )
 
     def control_to(self, value):
