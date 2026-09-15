@@ -60,6 +60,23 @@ class PixhawkController:
 
             latest_control_state = self.control_state.get_latest()
 
+            if latest_control_state.depth_set is not None:
+                self.master.mav.set_position_target_global_int_send(
+                    0,       # time_boot_ms (not used)
+                    self.master.target_system,
+                    self.master.target_component,
+                    mavutil.mavlink.MAV_FRAME_GLOBAL_INT, # frame
+                    0b110111111011, # type_mask: ignores everything except Z position
+                    0, 0,    # lat, lon (ignored by mask)
+                    latest_control_state.depth_set,   # Z position (your target depth in meters)
+                    0, 0, 0, # x, y, z velocity (ignored)
+                    0, 0, 0, # x, y, z acceleration (ignored)
+                    0, 0     # yaw, yaw_rate (ignored)
+                )
+                with self.control_state as c:
+                    c.depth_set = None
+
+
             self.rc_channels_override_send(
                 1500,  # CH1
                 1500,  # CH2

@@ -16,6 +16,8 @@ class ControlState:
     servo: int = 1700
     target_mode: str = None
     arm_toggle: bool = False
+    depth_set: int = None
+
 
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.

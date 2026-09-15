@@ -23,7 +23,7 @@ class Rov26Autonomous:
         auto_event: threading.Event,
         **kwargs,
     ):
-        self.target_x = kwargs.get("target_x") or 0.0
+        self.target_x = kwargs.get("target_x") or 2.1
         self.target_y = kwargs.get("target_y") or -3.9
         self.target_z = kwargs.get("target_z") or 26.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
@@ -242,10 +242,16 @@ class Rov26Autonomous:
                 time.sleep(3)
 
                 with self.control_state as control:
-                    control.forward = 1425
-                time.sleep(4)
+                    control.forward = 1300
+                time.sleep(6)
                 with self.control_state as control:
                     control.forward = 1500
+
+
+                with self.control_state as control:
+                    control.target_mode = "ALT_HOLD"
+
+                time.sleep(0.5)
 
                 # gunakan depth yang direkam saat manual
                 if not self.target_depth():
@@ -253,41 +259,42 @@ class Rov26Autonomous:
                     self.auto_event.clear()
                     continue
 
-                self.vertical_maintainer.control_until_timeout(8)
+                with self.control_state as control:
+                    control.depth_set = self.depth_state.get_latest().recorded_depth
+
+                time.sleep(30)
 
                 with self.control_state as control:
                     control.vertical = 1500
 
-                with self.control_state as control:
-                    control.target_mode = "ALT_HOLD"
 
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
                 )
-                # while self._is_running.is_set() and self.auto_event.is_set():
-                #     all_maintained = True
-                #     for maintainer in self.maintainers:
-                #         all_maintained = (
-                #             maintainer.control_until_target() and all_maintained
-                #         )
-                #
-                #         with self.control_state as control:
-                #             control.forward = 1500
-                #             control.lateral = 1500
-                #             control.vertical = 1500
-                #             control.yaw = 1500
-                #             control.servo = 1700
-                #
-                #         time.sleep(0.5)
-                #
-                #     if all_maintained:
-                #         logger.info(
-                #             "All directional maintenance modules verified stabilized inside deadzones!"
-                #         )
-                #         break
-                #     time.sleep(0.01)
+                while self._is_running.is_set() and self.auto_event.is_set():
+                    all_maintained = True
+                    for maintainer in self.maintainers:
+                        all_maintained = (
+                            maintainer.control_until_target() and all_maintained
+                        )
 
-                self.forward_and_grip()
+                        with self.control_state as control:
+                            control.forward = 1500
+                            control.lateral = 1500
+                            control.vertical = 1500
+                            control.yaw = 1500
+                            control.servo = 1700
+
+                        time.sleep(0.5)
+
+                    if all_maintained:
+                        logger.info(
+                            "All directional maintenance modules verified stabilized inside deadzones!"
+                        )
+                        break
+                    time.sleep(0.01)
+
+                # self.forward_and_grip()
                 self.auto_opt_1()
                 self.auto_event.clear()
                 logger.info(
@@ -299,5 +306,7 @@ class Rov26Autonomous:
                     control.vertical = 1900
                     control.yaw = 1500
                     control.servo = 1700
+
+                self._fallback_thread.cancel()
 
             time.sleep(0.01)

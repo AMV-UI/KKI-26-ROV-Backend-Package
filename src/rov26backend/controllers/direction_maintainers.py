@@ -20,7 +20,7 @@ class DirectionMaintainer:
         ki=0,
         kd=0,
         deadzone=0.5,
-        timeout=6,
+        timeout=4,
     ):
         self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-400, 400))
         self.auto_event = auto_event
@@ -72,18 +72,18 @@ class DirectionMaintainer:
 
             long_maintained = time_since_not_maintained > 1.0
 
-            if (
-                self.maintainer is not None
-                and abs(self.maintainer.get_current() - self.maintainer.pid.setpoint)
-                > self.maintainer.deadzone
-            ):
-                if time.time() - other_maintained > 1:
-                    logger.info(
-                        f"[{self.__class__.__name__}] Target tiemout due to other"
-                    )
-                    return False
-            else:
-                other_maintained = time.time()
+            # if (
+            #     self.maintainer is not None
+            #     and abs(self.maintainer.get_current() - self.maintainer.pid.setpoint)
+            #     > self.maintainer.deadzone
+            # ):
+            #     if time.time() - other_maintained > 1:
+            #         logger.info(
+            #             f"[{self.__class__.__name__}] Target tiemout due to other"
+            #         )
+            #         return False
+            # else:
+            #     other_maintained = time.time()
 
             if time.time() - last_maintained > self.timeout:
                 logger.info(

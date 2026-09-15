@@ -26,7 +26,7 @@
         "YAW": 0.0,
         "FORWARD": 0.0,
         "LATERAL": 0.0,
-        "ROLL": -1.0,
+        "ROLL": 0.0,
         "PITCH": 0.0
     },
     "6": {
@@ -36,7 +36,7 @@
         "YAW": 0.0,
         "FORWARD": 0.0,
         "LATERAL": 0.0,
-        "ROLL": -1.0,
+        "ROLL": 0.0,
         "PITCH": 0.0
     },
     "3": {

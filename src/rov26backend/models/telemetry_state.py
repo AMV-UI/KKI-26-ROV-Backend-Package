@@ -82,7 +82,7 @@ class TelemetryState:
                      Mot 4 Effort: {self.mot4_eff}
                      Mot 5 Effort: {self.mot5_eff}
                      Mot 6 Effort: {self.mot6_eff}
-                     servo Effort: {self.servo_effort}
+                     servo Effort: {self.servo_effort}  
                      """)
 
         self._lock.release()
