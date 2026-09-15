@@ -257,7 +257,7 @@ class PixhawkController:
                     ts.mot4_eff = servo_msg.servo4_raw
                     ts.mot5_eff = servo_msg.servo5_raw
                     ts.mot6_eff = servo_msg.servo6_raw
-                    ts.servo_effort = servo_msg.servo9_raw
+                    ts.servo_effort = servo_msg.servo10_raw
 
                 if heartbeat is not None:
                     ts.armed = (heartbeat.base_mode & 128) > 0

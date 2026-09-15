@@ -76,6 +76,8 @@ class PxnP5JoystickLinux:
                             input_state.btn_up = event.state
                         elif event.code == "BTN_START":
                             input_state.recorded_depth = event.state == 1
+                        # elif event.code == "BTN_THUMBR":
+                        #     input_state.
 
             except Exception as e:
                 logger.warning(f"Error reading gamepad: {e}")

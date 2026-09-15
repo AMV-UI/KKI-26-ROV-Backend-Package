@@ -42,6 +42,7 @@ from rov26backend.models.input_state import InputState
 from rov26backend.models.polygon_state import PolygonState
 from rov26backend.models.telemetry_state import TelemetryState
 from rov26backend.models.vision_state import VisionState
+from rov26backend.models.qrdat_state import QrdatState
 
 logger = logging.getLogger("ROV.main")
 
@@ -92,6 +93,7 @@ def rov(
     vision_state = VisionState()
     keyboard_state = SharedKeyboardState()
     depth_state = DepthState()
+    qrdat_state = QrdatState()
 
     mikon_param_queue = queue.Queue(maxsize=500)
 
@@ -193,13 +195,13 @@ def rov(
         mikon.start()
 
     if "bottom_cam" not in no:
-        bottom_camera = BottomCamera(vision_state, bottom_cam_id=bottom_cam_id)
+        bottom_camera = BottomCamera(qrdat_state, bottom_cam_id=bottom_cam_id)
         bottom_camera.start()
 
     if "grpc" not in no:
         server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
         add_ServerServicer_to_server(
-            RosGrpcServicer(telemetry_state, vision_state), server
+            RosGrpcServicer(telemetry_state, vision_state, qrdat_state), server
         )
         server.add_insecure_port(f"[::]:{grpc_port}")
         server.start()

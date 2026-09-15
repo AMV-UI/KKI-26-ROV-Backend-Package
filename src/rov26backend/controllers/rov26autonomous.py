@@ -108,7 +108,7 @@ class Rov26Autonomous:
     def forward_and_grip(self):
         logger.info("Autonomous Phase 2: Approaching payload and engaging gripper.")
 
-        GRIP_DISTANCE = 15.1  # cm, sesuaikan dengan posisi ideal gripper
+        GRIP_DISTANCE = 26.0  # cm, sesuaikan dengan posisi ideal gripper
 
         while self._is_running.is_set() and self.auto_event.is_set():
             latest_vision_state = self.vision_state.get_latest()
@@ -129,7 +129,7 @@ class Rov26Autonomous:
             # Masih terlalu jauh -> maju
             if z > GRIP_DISTANCE:
                 with self.control_state as control:
-                    control.forward = 1600
+                    control.forward = 1900
             # Sudah cukup dekat -> berhenti lalu grip
             else:
                 logger.info(f"Grip distance reached: {z:.2f} cm. Stopping ROV.")
@@ -138,7 +138,7 @@ class Rov26Autonomous:
                     control.forward = 1500
                 time.sleep(0.5)
                 with self.control_state as control:
-                    control.servo = 1800
+                    control.servo = 2230
 
                 logger.info("Payload grip engaged.")
                 break
@@ -235,7 +235,7 @@ class Rov26Autonomous:
                     logger.info("GIVING UP AUTO")
                     self.auto_event.clear()
 
-                self._fallback_thread = threading.Timer(5, give_up)
+                self._fallback_thread = threading.Timer(60, give_up)
 
                 self._fallback_thread.start()
 
@@ -243,7 +243,7 @@ class Rov26Autonomous:
 
                 with self.control_state as control:
                     control.forward = 1425
-                time.sleep(6)
+                time.sleep(4)
                 with self.control_state as control:
                     control.forward = 1500
 
@@ -264,30 +264,30 @@ class Rov26Autonomous:
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
                 )
-                while self._is_running.is_set() and self.auto_event.is_set():
-                    all_maintained = True
-                    for maintainer in self.maintainers:
-                        all_maintained = (
-                            maintainer.control_until_target() and all_maintained
-                        )
+                # while self._is_running.is_set() and self.auto_event.is_set():
+                #     all_maintained = True
+                #     for maintainer in self.maintainers:
+                #         all_maintained = (
+                #             maintainer.control_until_target() and all_maintained
+                #         )
+                #
+                #         with self.control_state as control:
+                #             control.forward = 1500
+                #             control.lateral = 1500
+                #             control.vertical = 1500
+                #             control.yaw = 1500
+                #             control.servo = 1700
+                #
+                #         time.sleep(0.5)
+                #
+                #     if all_maintained:
+                #         logger.info(
+                #             "All directional maintenance modules verified stabilized inside deadzones!"
+                #         )
+                #         break
+                #     time.sleep(0.01)
 
-                        with self.control_state as control:
-                            control.forward = 1500
-                            control.lateral = 1500
-                            control.vertical = 1500
-                            control.yaw = 1500
-                            control.servo = 1700
-
-                        time.sleep(2)
-
-                    if all_maintained:
-                        logger.info(
-                            "All directional maintenance modules verified stabilized inside deadzones!"
-                        )
-                        break
-                    time.sleep(0.01)
-
-                # self.forward_and_grip()
+                self.forward_and_grip()
                 self.auto_opt_1()
                 self.auto_event.clear()
                 logger.info(

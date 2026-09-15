@@ -64,8 +64,8 @@ class ROV26RcMixer:
         **kwargs,
     ):
         self.smoothing_factor = kwargs.get("smoothing_factor") or 1
-        self.servo_open = kwargs.get("servo_open") or 1880
-        self.servo_close = kwargs.get("servo_close") or 2390
+        self.servo_open = kwargs.get("servo_open") or 2100
+        self.servo_close = kwargs.get("servo_close") or 2550
         self.servo_target = self.servo_open
 
         self.auto_event = auto_event
@@ -200,13 +200,13 @@ class ROV26RcMixer:
             self._update_motor_inputs(inputs)
             self._update_mode_inputs(inputs)
             self._update_servo_inputs(inputs)
+            # self._update_servo_inputs_analog(inputs)
 
             if self.recorded_depth_btn.toggle(inputs.recorded_depth):
                 with self.depth_state as depth_state:
                     depth_state.recorded_depth = depth_state.depth
 
                     logger.info(f"Depth recorded: {depth_state.recorded_depth:.3f} m")
-            # self._update_servo_inputs_analog(inputs)
 
         if self.auto_event.is_set():
             self._update_poll_auto_stop(inputs)

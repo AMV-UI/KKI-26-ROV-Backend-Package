@@ -7,11 +7,8 @@ from typing import Any
 logger = logging.getLogger("ROV.cam")
 
 @dataclass
-class VisionState:
-    tvec = [0, 0, 0]
-    rvec = [0, 0, 0]
-    euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
-    qr_polygon = None
+class QrdatState:
+    qr_side: str = "NOT_FOUND"
 
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.
@@ -26,7 +23,7 @@ class VisionState:
                 if hasattr(self, key) and key != "_lock":
                     setattr(self, key, value)
 
-    def get_latest(self) -> "VisionState":
+    def get_latest(self) -> "QrdatState":
         """Returns a thread-safe snapshot of the current state as an object."""
         # logger.info(f"Current working thread: {threading.current_thread().name}")
         with self._lock:

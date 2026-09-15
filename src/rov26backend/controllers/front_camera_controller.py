@@ -21,7 +21,7 @@ class FrontCamera(BaseCamera):
         vision_state: VisionState,
         auto_event: threading.Event,
         frame_queue,
-        polygon_state: PolygonState,
+        polygon_state: PolygonState, 
         **kwargs,
     ):
         default_cam_id = (
@@ -33,6 +33,7 @@ class FrontCamera(BaseCamera):
         super().__init__(
             camera_id=kwargs.get("front_camera_id") or default_cam_id,
             stream_url="rtsp://localhost:8554/live/frontcam",
+            thread_name = "Front Camera"
         )
 
         self.vision_state = vision_state
@@ -44,21 +45,6 @@ class FrontCamera(BaseCamera):
 
         # self.qr_text = "NOT_FOUND"
         # self.last_qr_read = time.time()
-
-    def update_frame(self, frame):
-        """Memasukkan frame terbaru secara thread-safe dan kirim ke AI Queue."""
-        if frame is None:
-            return
-
-        with self.frame_lock:
-            self.latest_frame = frame.copy()
-
-        # Masukkan frame terbaru ke Queue AI secara non-blocking
-        try:
-            self.ai_frame_queue.get_nowait()  # Buang frame lama jika AI masih sibuk
-        except queue.Empty:
-            pass
-        self.ai_frame_queue.put(frame.copy())
 
     def process_and_publish(self, frame):
         try:

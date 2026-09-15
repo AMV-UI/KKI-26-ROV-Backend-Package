@@ -25,7 +25,9 @@ class BaseCamera:
         width=640,
         height=480,
         camera_id="",
+        thread_name = "",
     ):
+        self.thread_name = thread_name
         self.camera_id = camera_id
 
         self.stream_url = stream_url.replace("localhost", "127.0.0.1")
@@ -118,7 +120,7 @@ class BaseCamera:
     def start(self):
         if self._thread is None:
             self._is_running.set()
-            self._thread = threading.Thread(target=self.run, daemon=True)
+            self._thread = threading.Thread(target=self.run, daemon=True, name=self.thread_name)
             self._thread.start()
 
     def stop(self):

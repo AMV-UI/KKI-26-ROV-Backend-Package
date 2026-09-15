@@ -12,16 +12,17 @@ logger = logging.getLogger("ROV.gRPC")
 
 
 class RosGrpcServicer(ServerServicer):
-    def __init__(self, telemetry_state: TelemetryState, vision_state: VisionState):
+    def __init__(self, telemetry_state: TelemetryState, vision_state: VisionState, qrdat_state):
         self.telemetry_state = telemetry_state
         self.vision_state = vision_state
+        self.qrdat_state = qrdat_state
 
     def getTelemetry(self, request: telemetryRequest, context):
         """This runs in a gRPC worker thread"""
         try:
             while context.is_active():
                 latest_tel = asdict(self.telemetry_state.get_latest())
-                latest_vis = self.vision_state.get_latest().qr_side
+                latest_vis = self.qrdat_state.get_latest().qr_side
                 latest_tel.update({"qr_side": latest_vis})
                 latest_data = latest_tel
 

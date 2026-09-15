@@ -4,7 +4,7 @@ import cv2  # Added OpenCV import
 from pyzbar.pyzbar import decode
 
 from rov26backend.controllers.base_camera_controller import BaseCamera
-from rov26backend.models.vision_state import VisionState
+from rov26backend.models.qrdat_state import QrdatState
 
 
 class BottomCamera(BaseCamera):
@@ -15,7 +15,7 @@ class BottomCamera(BaseCamera):
 
     def __init__(
         self,
-        vision_state: VisionState,
+        vision_state: QrdatState,
         **kwargs,
     ):
         default_cam_id = (
@@ -27,6 +27,7 @@ class BottomCamera(BaseCamera):
             camera_id=kwargs.get("bottom_camera_id") or default_cam_id,
             stream_url="rtsp://localhost:8554/live/bottomcam",
             fps=30,
+            thread_name = "Bottom Cam"
         )
         self.qr_text = "NOT_FOUND"
         self.vision_state = vision_state
