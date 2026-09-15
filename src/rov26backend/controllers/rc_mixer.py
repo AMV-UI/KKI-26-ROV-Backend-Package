@@ -69,6 +69,7 @@ class ROV26RcMixer:
         self.servo_target = self.servo_open
 
         self.auto_event = auto_event
+        self.prev_auto_event = auto_event.is_set()
 
         self.last_servo_time = time.time()
 
@@ -196,17 +197,34 @@ class ROV26RcMixer:
 
     def update_control_from_inputs(self):
         inputs = self.input_state.get_latest()
-        if not self.auto_event.is_set() and not self.control_recorder.is_playing:
+
+        current_auto_event = self.auto_event.is_set()
+
+        if not current_auto_event:
             self._update_motor_inputs(inputs)
             self._update_mode_inputs(inputs)
+
+            # Detect transition: AUTO -> MANUAL
+            if self.prev_auto_event:
+                logger.info(
+                    "[MIXER] AUTO ended -> setting servo to CLOSED (2550)"
+                )
+                self.servo_target = 2550
+
             self._update_servo_inputs(inputs)
-            # self._update_servo_inputs_analog(inputs)
 
-            if self.recorded_depth_btn.toggle(inputs.recorded_depth):
-                with self.depth_state as depth_state:
-                    depth_state.recorded_depth = depth_state.depth
+            if current_auto_event:
+                self._update_poll_auto_stop(inputs)
+                
+            # remember current state for next loop
+            self.prev_auto_event = current_auto_event
+                # self._update_servo_inputs_analog(inputs)
 
-                    logger.info(f"Depth recorded: {depth_state.recorded_depth:.3f} m")
+        if self.recorded_depth_btn.toggle(inputs.recorded_depth):
+            with self.depth_state as depth_state:
+                   depth_state.recorded_depth = depth_state.depth
+
+        logger.info(f"Depth recorded: {depth_state.recorded_depth:.3f} m")
 
         if self.auto_event.is_set():
             self._update_poll_auto_stop(inputs)
