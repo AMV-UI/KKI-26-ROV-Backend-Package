@@ -127,7 +127,7 @@ class ROV26RcMixer:
             self._thread = threading.Thread(target=self.stream_rc, daemon=True)
             self._thread.start()
 
-        self._set_tune_manual()
+        self._set_tune_auto()
 
     def stop(self):
         self._is_running.clear()

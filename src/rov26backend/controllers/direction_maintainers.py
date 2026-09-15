@@ -20,7 +20,7 @@ class DirectionMaintainer:
         ki=0,
         kd=0,
         deadzone=0.5,
-        timeout=4,
+        timeout=2.5,
     ):
         self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-400, 400))
         self.auto_event = auto_event
@@ -87,9 +87,10 @@ class DirectionMaintainer:
 
             if time.time() - last_maintained > self.timeout:
                 logger.info(
-                    f"[{self.__class__.__name__}] Target passed timeout {self.timeout} seconds! Settled at: {self.get_current():.3f}"
-                )
-                return False
+        f"[{self.__class__.__name__}] Loop ended. long_maintained={long_maintained}, "
+        f"auto_event={self.auto_event.is_set()}, current={current:.3f}"
+    )
+                return long_maintained
 
             time.sleep(0.01)
 
@@ -119,10 +120,10 @@ class ForwardMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("forward_kp") or -100.0,
+            kwargs.get("forward_kp") or -30.0,
             kwargs.get("forward_ki") or 0.0,
             kwargs.get("forward_kd") or 0.0,
-            kwargs.get("forward_deadzone") or 3,
+            kwargs.get("forward_deadzone") or 6,
         )
 
     def control_to(self, value):
@@ -151,10 +152,10 @@ class LateralMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("lateral_kp") or -100.0,
+            kwargs.get("lateral_kp") or -18.0,
             kwargs.get("lateral_ki") or 0.0,
             kwargs.get("lateral_kd") or 0.0,
-            kwargs.get("lateral_deadzone") or 1.0,
+            kwargs.get("lateral_deadzone") or 5.0,
         )
 
     def control_to(self, value):

@@ -60,7 +60,7 @@
         "PITCH": 0.0
     },
     "GLOBAL": {
-        "ATC_RAT_YAW_P": 0.5,
+        "ATC_RAT_YAW_P": 0.18,
         "ATC_RAT_YAW_I": 0.018,
         "ATC_RAT_YAW_D": 0.0,
         "ATC_ANG_YAW_P": 6.0

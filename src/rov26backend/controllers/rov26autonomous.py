@@ -25,7 +25,7 @@ class Rov26Autonomous:
     ):
         self.target_x = kwargs.get("target_x") or 2.1
         self.target_y = kwargs.get("target_y") or -3.9
-        self.target_z = kwargs.get("target_z") or 26.0
+        self.target_z = kwargs.get("target_z") or 25.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
 
         self._thread = None
@@ -155,17 +155,16 @@ class Rov26Autonomous:
         with self.control_state as control:
             control.forward = 1100
             control.lateral = 1500
-            control.vertical = 1500
+            control.vertical = 1900
             control.yaw = 1500
-            control.servo = 2220
-        time.sleep(3)
+            control.servo = 2550
+        time.sleep(4.5)
 
         # stop bentar
         logger.info("Phase 3.2: Stabilizing after reversing.")
         with self.control_state as control:
             control.forward = 1500
             control.lateral = 1500
-            control.vertical = 1500
             control.yaw = 1500
         time.sleep(0.5)
 
@@ -191,10 +190,11 @@ class Rov26Autonomous:
         # mundur 3 detik sampe mentok ke ujung pipe
         logger.info("Phase 3.1: Reversing away from the pipe.")
         with self.control_state as control:
-            control.forward = 1450
+            control.forward = 1100
             control.lateral = 1500
             control.vertical = 1500
             control.yaw = 1500
+            control.servo = 2550
         time.sleep(3)
 
         for i in range(3):
@@ -203,14 +203,14 @@ class Rov26Autonomous:
             with self.control_state as control:
                 control.forward = 1500
                 control.lateral = 1500
-                control.vertical = 1550
+                control.vertical = 1900
                 control.yaw = 1500
             time.sleep(2)
 
             # mundur 2 detik
             logger.info(f"Phase 3.{i + 3}: Reversing to release the payload.")
             with self.control_state as control:
-                control.forward = 1450
+                control.forward = 1100
                 control.lateral = 1500
                 control.vertical = 1600
                 control.yaw = 1500
@@ -221,7 +221,7 @@ class Rov26Autonomous:
         with self.control_state as control:
             control.forward = 1500
             control.lateral = 1500
-            control.vertical = 1550
+            control.vertical = 1900
             control.yaw = 1500
         time.sleep(5)
 
@@ -230,12 +230,11 @@ class Rov26Autonomous:
         while self._is_running.is_set():
             if self.auto_event.is_set():
                 logger.info("Autonomous sequence triggered via auto_event flag.")
-
                 def give_up():
                     logger.info("GIVING UP AUTO")
                     self.auto_event.clear()
 
-                self._fallback_thread = threading.Timer(60, give_up)
+                self._fallback_thread = threading.Timer(180, give_up)
 
                 self._fallback_thread.start()
 
@@ -243,7 +242,7 @@ class Rov26Autonomous:
 
                 with self.control_state as control:
                     control.forward = 1300
-                time.sleep(6)
+                time.sleep(4.5)
                 with self.control_state as control:
                     control.forward = 1500
 
@@ -262,7 +261,7 @@ class Rov26Autonomous:
                 with self.control_state as control:
                     control.depth_set = self.depth_state.get_latest().recorded_depth
 
-                time.sleep(30)
+                time.sleep(6)
 
                 with self.control_state as control:
                     control.vertical = 1500
@@ -271,6 +270,18 @@ class Rov26Autonomous:
                 logger.info(
                     "Autonomous Phase 2: Deploying 6DOF close-loop coordinate hold."
                 )
+                with self.vision_state as v:
+                    v.tvec = [0, 0, 0]
+                    v.rvec = [0, 0, 0]
+                    v.euler_angles = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0}
+                    v.qr_polygon = None
+
+                oncer = True
+                
+                self.maintainers[0].pid.setpoint = 8
+                self.maintainers[0].deadzone = 6
+
+                time.sleep(0.5)
                 while self._is_running.is_set() and self.auto_event.is_set():
                     all_maintained = True
                     for maintainer in self.maintainers:
@@ -283,7 +294,7 @@ class Rov26Autonomous:
                             control.lateral = 1500
                             control.vertical = 1500
                             control.yaw = 1500
-                            control.servo = 1700
+                            control.servo = 2100
 
                         time.sleep(0.5)
 
@@ -294,8 +305,13 @@ class Rov26Autonomous:
                         break
                     time.sleep(0.01)
 
+                    if oncer:
+                        self.maintainers[0].pid.setpoint = -3.9
+                        self.maintainers[0].deadzone = 5
+                        oncer = False
+
                 # self.forward_and_grip()
-                self.auto_opt_1()
+                self.auto_opt_2()
                 self.auto_event.clear()
                 logger.info(
                     "Autonomous mission routing complete. Returning control context to baseline system."
@@ -305,7 +321,7 @@ class Rov26Autonomous:
                     control.lateral = 1500
                     control.vertical = 1900
                     control.yaw = 1500
-                    control.servo = 1700
+                    control.servo = 2550
 
                 self._fallback_thread.cancel()
 
