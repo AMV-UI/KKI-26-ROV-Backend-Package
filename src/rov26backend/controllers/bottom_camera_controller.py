@@ -172,11 +172,11 @@ class BottomCamera(BaseCamera):
             decoded_objects = decode(warped)
             for obj in decoded_objects:
                 self.qr_text = obj.data.decode("utf-8")
-                self.depoly.stop()
+                with self.vision_state as vision_state:
+                    vision_state.qr_side = self.qr_text
+                    self.depoly.stop()
                 logger.info(self.qr_text)
                 break
-            with self.vision_state as vision_state:
-                vision_state.qr_side = self.qr_text
 
         # =========================
         # 4. Update state

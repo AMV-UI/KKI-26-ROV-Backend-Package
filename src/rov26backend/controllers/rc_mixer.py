@@ -198,8 +198,6 @@ class ROV26RcMixer:
 
     def update_control_from_inputs(self):
         inputs = self.input_state.get_latest()
-        if self.emergency_stop_btn(inputs.r3):
-            logger.info("[MIXER] Emergency stop triggered!")
 
         current_auto_event = self.auto_event.is_set()
 
