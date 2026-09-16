@@ -331,10 +331,19 @@ class ROV26RcMixer:
                     f"{recorded_depth:.2f} m"
                 )
                 time.sleep(6)
-                #Naik
-                logger.info("[MIXER] Emergency ascent!")
+                #GRIP sm MAJU
+                logger.info("[MIXER] Emergency grip!")
                 with self.control_state as control:
                     control.target_mode = "MANUAL"
+                    control.forward = 1900
+                time.sleep(2)
+                with self.control_state as control:
+                    control.forward = 1500
+                    control.servo = 2570
+                time.sleep(0.5)
+                #NAIK
+                logger.info("[MIXER] Emergency ascent!")
+                with self.control_state as control:
                     control.vertical = 1900
 
                 time.sleep(30)
