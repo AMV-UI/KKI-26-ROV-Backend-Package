@@ -21,6 +21,7 @@ class InputState:
     recorded_depth: bool = False
     dpad_vert: int = 0
     dpad_hor: int = 0
+    thumbr: bool = False
 
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.

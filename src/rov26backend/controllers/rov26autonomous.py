@@ -5,7 +5,6 @@ import time
 from rov26backend.controllers.direction_maintainers import (
     ForwardMaintainer,
     LateralMaintainer,
-    VerticalMaintainer,
 )
 from rov26backend.models.control_state import ControlState
 from rov26backend.models.depth_state import DepthState
@@ -34,17 +33,6 @@ class Rov26Autonomous:
         self.control_state = control_state
         self.vision_state = vision_state
         self.depth_state = depth_state
-        self.vertical_maintainer = VerticalMaintainer(
-            self.target_y,
-            vision_state,
-            control_state,
-            depth_state,
-            auto_event,
-            vertical_kp=kwargs.get("vertical_kp"),
-            vertical_ki=kwargs.get("vertical_ki"),
-            vertical_kd=kwargs.get("vertical_kd"),
-            deadzone=kwargs.get("vertical_deadzone"),
-        )
 
         self.maintainers = [
             LateralMaintainer(
@@ -233,11 +221,12 @@ class Rov26Autonomous:
                     logger.info("GIVING UP AUTO")
                     self.auto_event.clear()
 
+                with self.control_state as control:
+                    control.servo = 2100
+
                 self._fallback_thread = threading.Timer(180, give_up)
 
                 self._fallback_thread.start()
-
-                time.sleep(3)
 
                 with self.control_state as control:
                     control.forward = 1300

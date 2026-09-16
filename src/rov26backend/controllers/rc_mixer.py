@@ -293,6 +293,8 @@ class ROV26RcMixer:
                 control.target_mode = "ALT_HOLD"
             elif self.autonomous_btn.toggle(inputs.btn_up):
                 control.target_mode = "AUTO"
+                self.auto_event.set()
+                self.servo_target = self.servo_close
 
             if self.manual_tune_btn.toggle(inputs.dpad_hor):
                 self._set_tune_manual()

@@ -25,6 +25,7 @@ class QRPolygonFinder:
             self._thread.start()
 
     def stop(self):
+        logger.info("HEAYV AI MODEL STOPPED")
         self._is_running.clear()
         if self._thread:
             self._thread.join()

@@ -92,7 +92,6 @@ class PixhawkController:
             if target_mode is not None:
                 if target_mode == "AUTO":
                     self.set_mode("STABILIZE")
-                    self.auto_event.set()
                     logger.info("Mode set to : Auto")
                 else:
                     self.set_mode(target_mode)

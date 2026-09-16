@@ -90,6 +90,7 @@ class BottomCamera(BaseCamera):
         self,
         vision_state: QrdatState, 
         polygon_state, frame_state,
+        depoly,
         **kwargs,
     ):
         default_cam_id = (
@@ -107,6 +108,7 @@ class BottomCamera(BaseCamera):
         self.vision_state = vision_state
         self.polygon_state = polygon_state
         self.frame_queue = frame_state
+        self.depoly = depoly
 
 
     
@@ -170,6 +172,7 @@ class BottomCamera(BaseCamera):
             decoded_objects = decode(warped)
             for obj in decoded_objects:
                 self.qr_text = obj.data.decode("utf-8")
+                self.depoly.stop()
                 logger.info(self.qr_text)
                 break
             with self.vision_state as vision_state:

@@ -197,10 +197,10 @@ def rov(
         mikon.start()
 
     if "bottom_cam" not in no:
-        bottom_camera = BottomCamera(qrdat_state, qrdetectionpoly_state, frame_state, bottom_cam_id=bottom_cam_id)
-        bottom_camera.start()
         qrpoly_finder = QRPolygonFinder(frame_state, qrdetectionpoly_state, model_size="n")
+        bottom_camera = BottomCamera(qrdat_state, qrdetectionpoly_state, frame_state, qrpoly_finder, bottom_cam_id=bottom_cam_id)
         qrpoly_finder.start()
+        bottom_camera.start()
 
     if "grpc" not in no:
         server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))

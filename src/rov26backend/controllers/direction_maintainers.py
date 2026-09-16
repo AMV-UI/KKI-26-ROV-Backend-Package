@@ -21,6 +21,9 @@ class DirectionMaintainer:
         kd=0,
         deadzone=0.5,
         timeout=2.5,
+        minom=None,
+        forward=False
+
     ):
         self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-400, 400))
         self.auto_event = auto_event
@@ -30,6 +33,7 @@ class DirectionMaintainer:
         self.deadzone = deadzone
         self.timeout = timeout
         self.maintainer = None
+        self.minom = minom
         logger.info(
             f"{self.__class__.__name__} initialized. Target: {self.target}, "
             f"PID: ({kp}, {ki}, {kd}), Deadzone: {self.deadzone}"
@@ -51,12 +55,18 @@ class DirectionMaintainer:
         long_maintained = False
         last_not_maintained = time.time()
         last_maintained = time.time()
-
         other_maintained = time.time()
 
+
         while not long_maintained and self.auto_event.is_set():
+
+
             current = self.get_current()
             output = self.pid(current)
+            if self.minom is not None and self.minom > current:
+                return True
+
+
             logger.debug(
                 f"[{self.__class__.__name__}] Tracking loop | Current: {current:.3f}, Error: {abs(current - self.target):.3f}, PID Output: {output:.3f}"
             )
@@ -125,6 +135,7 @@ class ForwardMaintainer(DirectionMaintainer):
             kwargs.get("forward_kd") or 0.0,
             kwargs.get("forward_deadzone") or 3.5,
             timeout=2,
+            minom=18,
         )
 
     def control_to(self, value):
@@ -172,78 +183,3 @@ class LateralMaintainer(DirectionMaintainer):
         return self.vision_state.get_latest().tvec[0]
 
 
-class VerticalMaintainer(DirectionMaintainer):
-    def __init__(
-        self,
-        target,
-        vision_state: VisionState,
-        control_state: ControlState,
-        depth_state,
-        auto_event,
-        **kwargs,
-    ):
-        self.depth_state = depth_state
-        super().__init__(
-            target,
-            vision_state,
-            control_state,
-            auto_event,
-            kwargs.get("vertical_kp") or 16000.0,
-            kwargs.get("vertical_ki") or 0.0,
-            kwargs.get("vertical_kd") or 0.0,
-            kwargs.get("vertical_deadzone") or 0.03,
-        )
-
-        self.pid.output_limits = (-400, 400)
-
-    def control_until_timeout(self, timeout):
-
-        end = time.time() + timeout
-
-        while time.time() < end:
-            current = self.get_current()
-            output = self.pid(current)
-            logger.debug(
-                f"[{self.__class__.__name__}] Tracking loop | Current: {current:.3f}, Error: {abs(current - self.target):.3f}, PID Output: {output:.3f}"
-            )
-            self.control_to(int(1500 + output))
-            time.sleep(0.01)
-
-        logger.info(
-            f"[{self.__class__.__name__}] Target successfully reached! Settled at: {self.get_current():.3f}"
-        )
-
-    def control_to(self, value):
-        with self.control_state as control:
-            control.vertical = int(value)
-
-    def get_current(self):
-        return self.depth_state.get_latest().depth
-
-
-class YawMaintainer(DirectionMaintainer):
-    def __init__(
-        self,
-        target,
-        vision_state: VisionState,
-        control_state: ControlState,
-        auto_event,
-        **kwargs,
-    ):
-        super().__init__(
-            target,
-            vision_state,
-            control_state,
-            auto_event,
-            kwargs.get("yaw_kp") or 10.0,
-            kwargs.get("yaw_ki") or 0.0,
-            kwargs.get("yaw_kd") or 0.0,
-            kwargs.get("yaw_deadzone") or 0.5,
-        )
-
-    def control_to(self, value):
-        with self.control_state as control:
-            control.yaw = int(value)
-
-    def get_current(self):
-        return self.vision_state.get_latest().euler_angles["yaw"]
