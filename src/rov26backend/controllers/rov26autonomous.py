@@ -218,7 +218,9 @@ class Rov26Autonomous:
             if self.auto_event.is_set():
                 logger.info("Autonomous sequence triggered via auto_event flag.")
                 def give_up():
-                    logger.info("GIVING UP AUTO")
+                    logger.info("GIVING UP AUTO AND RISING")
+                    with self.control_state as control:
+                        control.vertical = 1900
                     self.auto_event.clear()
 
                 with self.control_state as control:
