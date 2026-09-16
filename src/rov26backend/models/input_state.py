@@ -19,6 +19,7 @@ class InputState:
     btn_left: bool = False
     btn_down: bool = False
     recorded_depth: bool = False
+    r3: bool = False
     dpad_vert: int = 0
     dpad_hor: int = 0
     thumbr: bool = False
