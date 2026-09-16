@@ -110,6 +110,7 @@ class ROV26RcMixer:
         self.record_btn = PressButton()
         self.playback_btn = PressButton()
         self.recorded_depth_btn = PressButton()
+        self.emergency_stop_btn = PressButton()
 
         self.input_state = input_state
         self.control_state = control_state
@@ -197,6 +198,8 @@ class ROV26RcMixer:
 
     def update_control_from_inputs(self):
         inputs = self.input_state.get_latest()
+        if self.emergency_stop_btn(inputs.r3):
+            logger.info("[MIXER] Emergency stop triggered!")
 
         current_auto_event = self.auto_event.is_set()
 
@@ -301,6 +304,46 @@ class ROV26RcMixer:
 
             if self.arm_btn.toggle(inputs.lb, inputs.rb):
                 control.arm_toggle = True
+            if self.emergency_stop_btn.toggle(inputs.r3):
+                recorded_depth = self.depth_state.get_latest().recorded_depth
+
+                #cek recorded depth
+                if recorded_depth is not None:
+                    logger.info(
+                        f"[MIXER] Emergency stop triggered! Returning to recorded depth: {recorded_depth}"
+                    )
+                    return
+                
+                logger.info("[MIXER] Emergency triggered!")
+                # Alt Hold
+                with self.control_state as control:
+                    control.arm_toggle = False
+                    control.target_mode = "ALT_HOLD"
+                    control.vertical = 1500
+
+                time.sleep(0.5) 
+
+                # Descend to recorded depth
+                with self.control_state as control:
+                    control.depth_set = recorded_depth # Wait for the control state to update
+                logger.info(
+                    f"[MIXER] Descending to recorded depth: "
+                    f"{recorded_depth:.2f} m"
+                )
+                time.sleep(6)
+                #Naik
+                logger.info("[MIXER] Emergency ascent!")
+                with self.control_state as control:
+                    control.target_mode = "MANUAL"
+                    control.vertical = 1900
+
+                time.sleep(30)
+                #Stop
+                with self.control_state as control:
+                    control.vertical = 1500
+
+                logger.info("[MIXER] Emergency sequence complete.")
+
 
     def _update_motor_inputs(self, inputs: InputState):
         raw_lateral = inputs.l_analog_x

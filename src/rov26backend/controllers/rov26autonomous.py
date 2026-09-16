@@ -309,7 +309,6 @@ class Rov26Autonomous:
                         self.maintainers[0].deadzone = 1
                         oncer = False
 
-                # self.forward_and_grip()
                 self.auto_opt_1()
                 self.auto_event.clear()
                 logger.info(
