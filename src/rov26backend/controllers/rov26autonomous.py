@@ -225,13 +225,13 @@ class Rov26Autonomous:
                 with self.control_state as control:
                     control.servo = 1960
 
-                self._fallback_thread = threading.Timer(60, give_up)
+                self._fallback_thread = threading.Timer(70, give_up)
 
                 self._fallback_thread.start()
 
                 with self.control_state as control:
                     control.forward = 1300
-                time.sleep(4.5)
+                time.sleep(5)
                 with self.control_state as control:
                     control.forward = 1500
 
