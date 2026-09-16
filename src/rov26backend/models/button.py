@@ -1,3 +1,4 @@
+import time
 class PressButton:
     def __init__(self):
         self.pressed = False
@@ -10,6 +11,20 @@ class PressButton:
             self.pressed = state
             return False
 
+class DoubleButton:
+    def __init__(self):
+        self.pressed = False
+        self.last_pressed = None
+
+    def toggle(self, state):
+        if not state and self.pressed:
+            self.pressed = state
+            if self.last_pressed is not None and abs(time.time() - self.last_pressed) < 1.0:
+                return True
+            self.last_pressed = time.time()
+        else:
+            self.pressed = state
+            return False
 
 class PressButtonTarget:
     def __init__(self, target):

@@ -7,7 +7,7 @@ import time
 from enum import Enum
 
 from rov26backend.controllers.keyboardshit import ControlRecorder, SharedKeyboardState
-from rov26backend.models.button import PressButton, PressButtonTarget
+from rov26backend.models.button import PressButton, PressButtonTarget, DoubleButton
 from rov26backend.models.control_state import ControlState
 from rov26backend.models.depth_state import DepthState
 from rov26backend.models.input_state import InputState
@@ -110,8 +110,8 @@ class ROV26RcMixer:
         self.record_btn = PressButton()
         self.playback_btn = PressButton()
         self.recorded_depth_btn = PressButton()
-        self.emergency_stop_btn = PressButton()
-        self.emergency_stop_v2 = PressButton()
+        self.emergency_stop_btn = DoubleButton()
+        self.emergency_stop_v2 = DoubleButton()
 
         self.input_state = input_state
         self.control_state = control_state
