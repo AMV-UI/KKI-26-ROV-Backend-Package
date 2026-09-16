@@ -304,71 +304,74 @@ class ROV26RcMixer:
                 self._set_tune_auto()
             if self.arm_btn.toggle(inputs.lb, inputs.rb):
                 control.arm_toggle = True
-            if self.emergency_stop_btn.toggle(inputs.r3):
-                recorded_depth = self.depth_state.get_latest().recorded_depth
+        if self.emergency_stop_btn.toggle(inputs.r3):
+            recorded_depth = self.depth_state.get_latest().recorded_depth
 
-                #cek recorded depth
-                if recorded_depth is not None:
-                    logger.info(
-                        f"[MIXER] Emergency stop triggered! Returning to recorded depth: {recorded_depth}"
-                    )
-                    return
-                
-                logger.info("[MIXER] Emergency triggered!")
-                # Alt Hold
-                with self.control_state as control:
-                    control.arm_toggle = False
-                    control.target_mode = "ALT_HOLD"
-                    control.vertical = 1500
-
-                time.sleep(0.5) 
-
-                # Descend to recorded depth
-                with self.control_state as control:
-                    control.depth_set = recorded_depth # Wait for the control state to update
+            #cek recorded depth
+            if recorded_depth is None:
                 logger.info(
-                    f"[MIXER] Descending to recorded depth: "
-                    f"{recorded_depth:.2f} m"
+                    f"[MIXER] Emergency stop triggered! Returning to recorded depth"
                 )
-                time.sleep(6)
-                #GRIP sm MAJU
-                logger.info("[MIXER] Emergency grip!")
-                with self.control_state as control:
-                    control.target_mode = "MANUAL"
-                    control.forward = 1900
-                time.sleep(2)
-                with self.control_state as control:
-                    control.forward = 1500
-                    control.servo = 2570
-                time.sleep(0.5)
-                with self.control_state as control:
-                    control.forward = 1100
-                time.sleep(3)
-                with self.control_state as control:
-                    control.forward = 1500
-                #NAIK
-                logger.info("[MIXER] Emergency ascent!")
-                with self.control_state as control:
-                    control.vertical = 1900
+                return
+            
+            logger.info("[MIXER] Emergency triggered!")
+            # Alt Hold
+            with self.control_state as control:
+                control.arm_toggle = False
+                control.target_mode = "ALT_HOLD"
+                control.vertical = 1500
 
-                time.sleep(30)
-                #Stop
-                with self.control_state as control:
-                    control.vertical = 1500
+            time.sleep(0.5) 
 
-                logger.info("[MIXER] Emergency sequence complete.")
-            if self.emergency_stop_v2.toggle(inputs.l4):
-                logger.info("[MIXER] EMERGENCY STOPPPPPPPPP!")
-                # Alt Hold
-                with self.control_state as control:
-                    control.vertical = 1100
-                time.sleep(6)
-                with self.control_state as control:
-                    control.servo = 2550
-                    control.vertical = 1900
-                time.sleep(12)
-                with self.control_state as control:
-                    control.vertical = 1500
+            # Descend to recorded depth
+            with self.control_state as control:
+                control.depth_set = recorded_depth # Wait for the control state to update
+            logger.info(
+                f"[MIXER] Descending to recorded depth: "
+                # f"{recorded_depth:.2f} m"
+            )
+            time.sleep(6)
+            #GRIP sm MAJU
+            logger.info("[MIXER] Emergency grip!")
+            with self.control_state as control:
+                control.target_mode = "MANUAL"
+                control.forward = 1900
+            time.sleep(2)
+            with self.control_state as control:
+                control.forward = 1500
+                control.servo = 2570
+            time.sleep(0.5)
+            with self.control_state as control:
+                control.forward = 1100
+            time.sleep(3)
+            with self.control_state as control:
+                control.forward = 1500
+            #NAIK
+            logger.info("[MIXER] Emergency ascent!")
+            with self.control_state as control:
+                control.vertical = 1900
+
+            time.sleep(10)
+            #Stop
+            with self.control_state as control:
+                control.vertical = 1500
+
+            self.servo_target = self.servo_close
+
+            logger.info("[MIXER] Emergency sequence complete.")
+        if self.emergency_stop_v2.toggle(inputs.l4):
+            # Alt Hold
+            with self.control_state as control:
+                control.vertical = 1100
+            logger.info("[MIXER] EMERGENCY STOPPPPPPPPP! RAISEEE")
+            time.sleep(6)
+            with self.control_state as control:
+                control.servo = 2570
+                control.vertical = 1900
+            time.sleep(10)
+            with self.control_state as control:
+                control.vertical = 1500
+            self.servo_target = self.servo_close
 
     def _update_motor_inputs(self, inputs: InputState):
         raw_lateral = inputs.l_analog_x

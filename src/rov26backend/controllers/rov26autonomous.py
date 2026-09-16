@@ -83,8 +83,6 @@ class Rov26Autonomous:
     def target_depth(self):
         recorded_depth = self.depth_state.get_latest().recorded_depth
         if recorded_depth is not None:
-            self.vertical_maintainer.pid.setpoint = recorded_depth
-
             logger.info(
                 f"Autonomous Phase 1: Descending to recorded depth of {recorded_depth:.2f} m."
             )
@@ -221,6 +219,7 @@ class Rov26Autonomous:
                     logger.info("GIVING UP AUTO AND RISING")
                     with self.control_state as control:
                         control.vertical = 1900
+                        control.servo = 2550
                     self.auto_event.clear()
 
                 with self.control_state as control:
