@@ -111,6 +111,7 @@ class ROV26RcMixer:
         self.playback_btn = PressButton()
         self.recorded_depth_btn = PressButton()
         self.emergency_stop_btn = PressButton()
+        self.emergency_stop_v2 = PressButton()
 
         self.input_state = input_state
         self.control_state = control_state
@@ -301,7 +302,6 @@ class ROV26RcMixer:
                 self._set_tune_manual()
             elif self.auto_tune_btn.toggle(inputs.dpad_hor):
                 self._set_tune_auto()
-
             if self.arm_btn.toggle(inputs.lb, inputs.rb):
                 control.arm_toggle = True
             if self.emergency_stop_btn.toggle(inputs.r3):
@@ -341,6 +341,11 @@ class ROV26RcMixer:
                     control.forward = 1500
                     control.servo = 2570
                 time.sleep(0.5)
+                with self.control_state as control:
+                    control.forward = 1100
+                time.sleep(3)
+                with self.control_state as control:
+                    control.forward = 1500
                 #NAIK
                 logger.info("[MIXER] Emergency ascent!")
                 with self.control_state as control:
@@ -352,7 +357,18 @@ class ROV26RcMixer:
                     control.vertical = 1500
 
                 logger.info("[MIXER] Emergency sequence complete.")
-
+            if self.emergency_stop_v2.toggle(inputs.l4):
+                logger.info("[MIXER] EMERGENCY STOPPPPPPPPP!")
+                # Alt Hold
+                with self.control_state as control:
+                    control.vertical = 1100
+                time.sleep(6)
+                with self.control_state as control:
+                    control.servo = 2550
+                    control.vertical = 1900
+                time.sleep(12)
+                with self.control_state as control:
+                    control.vertical = 1500
 
     def _update_motor_inputs(self, inputs: InputState):
         raw_lateral = inputs.l_analog_x
