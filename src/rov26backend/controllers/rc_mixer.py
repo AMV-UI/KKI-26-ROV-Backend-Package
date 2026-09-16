@@ -64,8 +64,8 @@ class ROV26RcMixer:
         **kwargs,
     ):
         self.smoothing_factor = kwargs.get("smoothing_factor") or 1
-        self.servo_open = kwargs.get("servo_open") or 2100
-        self.servo_close = kwargs.get("servo_close") or 2570
+        self.servo_open = kwargs.get("servo_open") or 1960
+        self.servo_close = kwargs.get("servo_close") or 2320
         self.servo_target = self.servo_open
 
         self.auto_event = auto_event
@@ -211,16 +211,16 @@ class ROV26RcMixer:
                 logger.info(
                     "[MIXER] AUTO ended -> setting servo to CLOSED (2550)"
                 )
-                self.servo_target = 2570
+                self.servo_target = 2320
 
             self._update_servo_inputs(inputs)
+            # self._update_servo_inputs_analog(inputs)
 
             if current_auto_event:
                 self._update_poll_auto_stop(inputs)
                 
             # remember current state for next loop
             self.prev_auto_event = current_auto_event
-                # self._update_servo_inputs_analog(inputs)
 
         if self.recorded_depth_btn.toggle(inputs.recorded_depth):
             with self.depth_state as depth_state:
@@ -339,7 +339,7 @@ class ROV26RcMixer:
             time.sleep(2)
             with self.control_state as control:
                 control.forward = 1500
-                control.servo = 2570
+                control.servo = 2320
             time.sleep(0.5)
             with self.control_state as control:
                 control.forward = 1100
@@ -366,7 +366,7 @@ class ROV26RcMixer:
             logger.info("[MIXER] EMERGENCY STOPPPPPPPPP! RAISEEE")
             time.sleep(6)
             with self.control_state as control:
-                control.servo = 2570
+                control.servo = 2320
                 control.vertical = 1900
             time.sleep(10)
             with self.control_state as control:

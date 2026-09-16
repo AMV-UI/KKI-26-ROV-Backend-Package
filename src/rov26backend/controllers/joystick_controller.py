@@ -36,7 +36,7 @@ class PxnP5JoystickLinux:
         return (x - 128) / 128
 
     def _normalize_brakes(self, x):
-        return x / 255
+        return  x / 255
 
     def monitor(self):
         while self._is_running.is_set():

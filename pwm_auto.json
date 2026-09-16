@@ -10,12 +10,12 @@
         "PITCH": 0.0
     },
     "2": {
-        "MIN": 1415,
-        "MAX": 1544,
+        "MIN": 1423,
+        "MAX": 1568,
         "THROTTLE": 0.0,
         "YAW": 1.0,
         "FORWARD": 1.0,
-        "LATERAL": 1.0,
+        "LATERAL": 0.7,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
@@ -45,24 +45,26 @@
         "THROTTLE": 0.0,
         "YAW": -1.0,
         "FORWARD": 0.0,
-        "LATERAL": 1.0,
+        "LATERAL": 0.7,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
     "4": {
-        "MIN": 1419,
-        "MAX": 1543,
+        "MIN": 1445,
+        "MAX": 1565,
         "THROTTLE": 0.0,
         "YAW": 1.0,
         "FORWARD": 0.0,
-        "LATERAL": -0.8,
+        "LATERAL": -0.6,
         "ROLL": 0.0,
         "PITCH": 0.0
     },
     "GLOBAL": {
-        "ATC_RAT_YAW_P": 0.18,
-        "ATC_RAT_YAW_I": 0.018,
+        "ATC_RAT_YAW_P": 0.3,
+        "ATC_RAT_YAW_I": 0.0,
         "ATC_RAT_YAW_D": 0.0,
-        "ATC_ANG_YAW_P": 6.0
+        "ATC_ANG_YAW_P": 6.0,
+        "MOT_1_DIRECTION": -1.0,
+        "MOT_4_DIRECTION": -1.0
     }
 }

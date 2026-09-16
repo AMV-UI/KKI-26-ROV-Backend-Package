@@ -215,13 +215,13 @@ def rov(
         tuner = LivePWMOverlayTuner(mikon_param_queue)
         tuner.start()
 
-    def handle_key_event(event):
-        if event.event_type == keyboard.KEY_DOWN:
-            keyboard_state.set_key(event)
-        elif event.event_type == keyboard.KEY_UP:
-            keyboard_state.clear_key_on_release(event)
-
-    keyboard.hook(handle_key_event)
+    # def handle_key_event(event):
+    #     if event.event_type == keyboard.KEY_DOWN:
+    #         keyboard_state.set_key(event)
+    #     elif event.event_type == keyboard.KEY_UP:
+    #         keyboard_state.clear_key_on_release(event)
+    #
+    # keyboard.hook(handle_key_event)
 
     # auto_event.set()
 

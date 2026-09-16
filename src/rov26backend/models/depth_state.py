@@ -7,8 +7,7 @@ from typing import Any
 @dataclass
 class DepthState:
     depth = 0.0
-    recorded_depth = None
-
+    recorded_depth = -0.158
     def __post_init__(self):
         # __post_init__ runs after the dataclass sets up the fields.
         # By not type-hinting _lock, it is excluded from asdict() and dataclass fields.

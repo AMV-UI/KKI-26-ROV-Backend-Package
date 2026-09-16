@@ -24,7 +24,7 @@ class Rov26Autonomous:
     ):
         self.target_x = kwargs.get("target_x") or 2.1
         self.target_y = kwargs.get("target_y") or -3.9
-        self.target_z = kwargs.get("target_z") or 18.0
+        self.target_z = kwargs.get("target_z") or 13.0
         self.target_yaw = kwargs.get("target_yaw") or 0.0
 
         self._thread = None
@@ -142,7 +142,7 @@ class Rov26Autonomous:
             control.forward = 1100
             control.lateral = 1500
             control.yaw = 1500
-            control.servo = 2570
+            control.servo = 2320
         time.sleep(4.5)
 
         # stop bentar
@@ -179,7 +179,7 @@ class Rov26Autonomous:
             control.lateral = 1500
             control.vertical = 1500
             control.yaw = 1500
-            control.servo = 2550
+            control.servo = 2320
         time.sleep(3)
 
         for i in range(3):
@@ -219,13 +219,13 @@ class Rov26Autonomous:
                     logger.info("GIVING UP AUTO AND RISING")
                     with self.control_state as control:
                         control.vertical = 1900
-                        control.servo = 2550
+                        control.servo = 2320
                     self.auto_event.clear()
 
                 with self.control_state as control:
-                    control.servo = 2100
+                    control.servo = 1960
 
-                self._fallback_thread = threading.Timer(180, give_up)
+                self._fallback_thread = threading.Timer(60, give_up)
 
                 self._fallback_thread.start()
 
@@ -267,23 +267,29 @@ class Rov26Autonomous:
 
                 oncer = True
                 
-                self.maintainers[0].pid.setpoint = 4
+                self.maintainers[0].pid.setpoint = 2
                 self.maintainers[0].deadzone = 4
 
                 time.sleep(0.5)
                 while self._is_running.is_set() and self.auto_event.is_set():
                     all_maintained = True
+
                     for maintainer in self.maintainers:
+                        result = maintainer.control_until_target()
                         all_maintained = (
-                            maintainer.control_until_target() and all_maintained
+                            result and all_maintained
                         )
+
+                        if result and isinstance(maintainer, ForwardMaintainer):
+                            all_maintained = True
+
 
                         with self.control_state as control:
                             control.forward = 1500
                             control.lateral = 1500
                             control.vertical = 1500
                             control.yaw = 1500
-                            control.servo = 2100
+                            control.servo = 1960
 
                         time.sleep(0.5)
 
@@ -295,7 +301,7 @@ class Rov26Autonomous:
                     time.sleep(0.01)
 
                     if oncer:
-                        self.maintainers[0].pid.setpoint = 1
+                        self.maintainers[0].pid.setpoint = 0.5
                         self.maintainers[0].deadzone = 1
                         oncer = False
 
@@ -309,7 +315,7 @@ class Rov26Autonomous:
                     control.lateral = 1500
                     control.vertical = 1900
                     control.yaw = 1500
-                    control.servo = 2570
+                    control.servo = 2320
 
                 self._fallback_thread.cancel()
 

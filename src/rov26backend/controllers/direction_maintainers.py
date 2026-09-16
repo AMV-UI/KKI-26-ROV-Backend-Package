@@ -22,8 +22,8 @@ class DirectionMaintainer:
         deadzone=0.5,
         timeout=2.5,
         minom=None,
-        forward=False
-
+        minom_timeout=1,
+        forward=False,
     ):
         self.pid = PID(Kp=kp, Ki=ki, Kd=kd, setpoint=target, output_limits=(-400, 400))
         self.auto_event = auto_event
@@ -34,6 +34,7 @@ class DirectionMaintainer:
         self.timeout = timeout
         self.maintainer = None
         self.minom = minom
+        self.minom_timeout = minom_timeout
         logger.info(
             f"{self.__class__.__name__} initialized. Target: {self.target}, "
             f"PID: ({kp}, {ki}, {kd}), Deadzone: {self.deadzone}"
@@ -56,16 +57,21 @@ class DirectionMaintainer:
         last_not_maintained = time.time()
         last_maintained = time.time()
         other_maintained = time.time()
-
+        last_not_minom = time.time()
 
         while not long_maintained and self.auto_event.is_set():
-
-
             current = self.get_current()
             output = self.pid(current)
-            if self.minom is not None and self.minom > current:
-                return True
 
+            # Minom threshold check with continuous duration timeout
+            if self.minom is not None and current < self.minom:
+                if time.time() - last_not_minom >= self.minom_timeout:
+                    logger.info(
+                        f"[{self.__class__.__name__}] Minom threshold met for >={self.minom_timeout}s. Current: {current:.3f}"
+                    )
+                    return True
+            else:
+                last_not_minom = time.time()
 
             logger.debug(
                 f"[{self.__class__.__name__}] Tracking loop | Current: {current:.3f}, Error: {abs(current - self.target):.3f}, PID Output: {output:.3f}"
@@ -82,24 +88,11 @@ class DirectionMaintainer:
 
             long_maintained = time_since_not_maintained > 0.5
 
-            # if (
-            #     self.maintainer is not None
-            #     and abs(self.maintainer.get_current() - self.maintainer.pid.setpoint)
-            #     > self.maintainer.deadzone
-            # ):
-            #     if time.time() - other_maintained > 1:
-            #         logger.info(
-            #             f"[{self.__class__.__name__}] Target tiemout due to other"
-            #         )
-            #         return False
-            # else:
-            #     other_maintained = time.time()
-
             if time.time() - last_maintained > self.timeout:
                 logger.info(
-        f"[{self.__class__.__name__}] Loop ended. long_maintained={long_maintained}, "
-        f"auto_event={self.auto_event.is_set()}, current={current:.3f}"
-    )
+                    f"[{self.__class__.__name__}] Loop ended. long_maintained={long_maintained}, "
+                    f"auto_event={self.auto_event.is_set()}, current={current:.3f}"
+                )
                 return long_maintained
 
             time.sleep(0.01)
@@ -130,12 +123,13 @@ class ForwardMaintainer(DirectionMaintainer):
             vision_state,
             control_state,
             auto_event,
-            kwargs.get("forward_kp") or -10.0,
+            kwargs.get("forward_kp") or -2.0,
             kwargs.get("forward_ki") or 0,
             kwargs.get("forward_kd") or 0.0,
             kwargs.get("forward_deadzone") or 3.5,
             timeout=2,
             minom=18,
+            minom_timeout=1.0,
         )
 
     def control_to(self, value):
@@ -168,7 +162,7 @@ class LateralMaintainer(DirectionMaintainer):
             kwargs.get("lateral_ki") or 0.0,
             kwargs.get("lateral_kd") or 0.0,
             kwargs.get("lateral_deadzone") or 2.0,
-            timeout=4
+            timeout=4,
         )
 
     def control_to(self, value):
@@ -181,5 +175,3 @@ class LateralMaintainer(DirectionMaintainer):
 
     def get_current(self):
         return self.vision_state.get_latest().tvec[0]
-
-
